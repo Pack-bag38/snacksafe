@@ -580,14 +580,13 @@ function SuperAdmin({ session, onLogout }) {
 function ClientApp({ session, profile, onLogout }) {
   const [page, setPage] = useState("dashboard")
   const NAV = [
-    {id:"maintien",icon:"🔥",label:"Chaud"},
-    {id:"dashboard",icon:"🏠",label:"Accueil"},
-    {id:"equipements",icon:"🌡️",label:"Temp."},
-    {id:"checklist",icon:"✅",label:"Checklist"},
-    {id:"reglementation",icon:"📋",label:"Réglements"},
-    {id:"rapports",icon:"📊",label:"Rapports"},
-    {id:"reception",icon:"📦",label:"Réception"},
-  ]
+  {id:"dashboard",icon:"🏠",label:"Accueil"},
+  {id:"equipements",icon:"🌡️",label:"Temp."},
+  {id:"checklist",icon:"✅",label:"Checklist"},
+  {id:"rapports",icon:"📊",label:"Rapports"},
+  {id:"reception",icon:"📦",label:"Réception"},
+  {id:"maintien",icon:"🔥",label:"Chaud"},
+]
   return (
     <div style={{fontFamily:"'DM Sans','Trebuchet MS',sans-serif",maxWidth:460,margin:"0 auto",background:"#FAFAF8",minHeight:"100vh",display:"flex",flexDirection:"column"}}>
       <div style={{background:"#fff",borderBottom:"0.5px solid #E8E8E4",padding:"14px 20px 12px",position:"sticky",top:0,zIndex:10}}>
