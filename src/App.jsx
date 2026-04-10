@@ -769,7 +769,7 @@ function PageChecklist({ profile }) {
       </div>)}
     </div>
   </div>
-}}
+}
 
 function PageReglementation() {
   const [cat, setCat] = useState("Tous")
