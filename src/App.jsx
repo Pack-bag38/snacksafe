@@ -580,6 +580,7 @@ function SuperAdmin({ session, onLogout }) {
 function ClientApp({ session, profile, onLogout }) {
   const [page, setPage] = useState("dashboard")
   const NAV = [
+    {id:"maintien",icon:"🔥",label:"Chaud"},
     {id:"dashboard",icon:"🏠",label:"Accueil"},
     {id:"equipements",icon:"🌡️",label:"Temp."},
     {id:"checklist",icon:"✅",label:"Checklist"},
@@ -608,6 +609,7 @@ function ClientApp({ session, profile, onLogout }) {
         {page==="reglementation" && <PageReglementation/>}
         {page==="rapports" && <PageRapports profile={profile}/>}
         {page==="reception" && <PageReception profile={profile}/>}
+        {page==="maintien" && <PageMaintienChaud profile={profile}/>}
       </div>
       <div style={{position:"fixed",bottom:0,left:"50%",transform:"translateX(-50%)",width:"100%",maxWidth:460,background:"#fff",borderTop:"0.5px solid #E8E8E4",display:"flex",padding:"4px 8px 8px",zIndex:10}}>
         {NAV.map(n => <button key={n.id} onClick={()=>setPage(n.id)} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:3,padding:"8px 2px",border:"none",borderRadius:8,cursor:"pointer",fontFamily:"inherit",background:page===n.id?"#E1F5EE":"transparent"}}>
@@ -903,6 +905,128 @@ function PageReception({ profile }) {
           </div>
           <div style={{fontSize:11,color:"#888"}}>{r.fournisseur} · {new Date(r.date).toLocaleDateString("fr-FR")}</div>
           {r.temperature && <div style={{fontSize:11,color:r.temperature_conforme?"#0F6E56":"#A32D2D",marginTop:2}}>🌡️ {r.temperature}°C {r.temperature_conforme?"✓":"⚠️"}</div>}
+        </div>)}
+      </div>
+    }
+  </div>
+  function PageMaintienChaud({ profile }) {
+  const [logs, setLogs] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [showForm, setShowForm] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [msg, setMsg] = useState("")
+  const tenantId = profile?.tenant_id
+  const [form, setForm] = useState({
+    plat: "", heure_debut: "", temperature: "", action_corrective: ""
+  })
+
+  useEffect(() => { if (tenantId) loadLogs() }, [tenantId])
+
+  const loadLogs = async () => {
+    setLoading(true)
+    const { data } = await supabase.from("maintien_chaud").select("*")
+      .eq("tenant_id", tenantId).order("created_at", { ascending: false }).limit(20)
+    setLogs(data || [])
+    setLoading(false)
+  }
+
+  const handleSubmit = async () => {
+    if (!form.plat || !form.heure_debut || !form.temperature) {
+      setMsg("Plat, heure et température obligatoires"); return
+    }
+    setSaving(true)
+    const temp = parseFloat(form.temperature)
+    const temp_conforme = temp >= 63
+    const statut = temp_conforme ? "conforme" : "non_conforme"
+    const { error } = await supabase.from("maintien_chaud").insert([{
+      tenant_id: tenantId,
+      plat: form.plat,
+      heure_debut: form.heure_debut,
+      temperature: temp,
+      temperature_conforme: temp_conforme,
+      action_corrective: temp_conforme ? null : form.action_corrective,
+      statut,
+    }])
+    if (error) setMsg("Erreur : " + error.message)
+    else {
+      setMsg("✅ Relevé enregistré !")
+      setForm({ plat: "", heure_debut: "", temperature: "", action_corrective: "" })
+      setShowForm(false)
+      loadLogs()
+    }
+    setSaving(false)
+    setTimeout(() => setMsg(""), 3000)
+  }
+
+  const temp = parseFloat(form.temperature)
+  const previewStatut = form.temperature ? (temp >= 63 ? "ok" : "bad") : null
+
+  return <div>
+    <div style={{background:"#E6F1FB",borderRadius:12,padding:"12px 16px",marginBottom:16,fontSize:12,color:"#042C53"}}>
+      🌡️ <strong>Règle HACCP</strong> — Maintien en température chaude : <strong>≥ 63°C en permanence</strong>
+    </div>
+
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
+      <div style={{fontSize:13,color:"#888"}}>{logs.length} relevé(s)</div>
+      <button onClick={()=>setShowForm(!showForm)} style={{padding:"8px 16px",background:"#1D9E75",color:"#fff",border:"none",borderRadius:8,cursor:"pointer",fontFamily:"inherit",fontSize:12,fontWeight:600}}>+ Nouveau relevé</button>
+    </div>
+
+    {msg && <div style={{padding:"10px 14px",background:msg.includes("✅")?"#E1F5EE":"#FCEBEB",color:msg.includes("✅")?"#085041":"#501313",borderRadius:8,marginBottom:12,fontSize:13}}>{msg}</div>}
+
+    {showForm && <div style={{background:"#fff",border:"1px solid #1D9E75",borderRadius:12,padding:16,marginBottom:16}}>
+      <div style={{fontSize:13,fontWeight:700,color:"#222",marginBottom:14}}>🔥 Nouveau relevé maintien chaud</div>
+
+      <div style={{marginBottom:10}}>
+        <label style={{fontSize:11,color:"#666",display:"block",marginBottom:4}}>Plat / Préparation *</label>
+        <input value={form.plat} onChange={e=>setForm(p=>({...p,plat:e.target.value}))}
+          placeholder="Ex: Poulet rôti, sauce tomate..."
+          style={{width:"100%",padding:"8px 12px",border:"1px solid #E0E0DC",borderRadius:8,fontSize:13,outline:"none",boxSizing:"border-box"}}/>
+      </div>
+
+      <div style={{marginBottom:10}}>
+        <label style={{fontSize:11,color:"#666",display:"block",marginBottom:4}}>Heure du relevé *</label>
+        <input type="time" value={form.heure_debut} onChange={e=>setForm(p=>({...p,heure_debut:e.target.value}))}
+          style={{width:"100%",padding:"8px 12px",border:"1px solid #E0E0DC",borderRadius:8,fontSize:13,outline:"none",boxSizing:"border-box"}}/>
+      </div>
+
+      <div style={{marginBottom:10}}>
+        <label style={{fontSize:11,color:"#666",display:"block",marginBottom:4}}>Température relevée (°C) *</label>
+        <input type="number" step="0.1" value={form.temperature} onChange={e=>setForm(p=>({...p,temperature:e.target.value}))}
+          placeholder="Ex: 68"
+          style={{width:"100%",padding:"8px 12px",border:"1px solid #E0E0DC",borderRadius:8,fontSize:13,outline:"none",boxSizing:"border-box"}}/>
+        {previewStatut && <div style={{marginTop:6,fontSize:12,fontWeight:500,color:previewStatut==="ok"?"#0F6E56":"#A32D2D"}}>
+          {previewStatut==="ok" ? "✅ Conforme (≥ 63°C)" : "🚨 Non conforme — action requise !"}
+        </div>}
+      </div>
+
+      {previewStatut === "bad" && <div style={{marginBottom:10}}>
+        <label style={{fontSize:11,color:"#666",display:"block",marginBottom:4}}>Action corrective *</label>
+        <input value={form.action_corrective} onChange={e=>setForm(p=>({...p,action_corrective:e.target.value}))}
+          placeholder="Ex: Remise en chauffe, élimination du plat..."
+          style={{width:"100%",padding:"8px 12px",border:"1px solid #E0E0DC",borderRadius:8,fontSize:13,outline:"none",boxSizing:"border-box"}}/>
+      </div>}
+
+      <div style={{display:"flex",gap:8,marginTop:4}}>
+        <button onClick={handleSubmit} disabled={saving} style={{padding:"8px 20px",background:"#1D9E75",color:"#fff",border:"none",borderRadius:8,cursor:"pointer",fontFamily:"inherit",fontSize:12,fontWeight:600}}>{saving?"...":"Enregistrer"}</button>
+        <button onClick={()=>setShowForm(false)} style={{padding:"8px 16px",background:"#fff",color:"#666",border:"1px solid #E0E0DC",borderRadius:8,cursor:"pointer",fontFamily:"inherit",fontSize:12}}>Annuler</button>
+      </div>
+    </div>}
+
+    {loading ? <div style={{color:"#888",fontSize:13,textAlign:"center",padding:20}}>Chargement...</div> :
+      logs.length === 0 ? <div style={{background:"#fff",border:"0.5px solid #E8E8E4",borderRadius:12,padding:24,textAlign:"center"}}>
+        <div style={{fontSize:32,marginBottom:8}}>🔥</div>
+        <div style={{fontSize:13,color:"#888"}}>Aucun relevé enregistré</div>
+      </div> :
+      <div style={{background:"#fff",border:"0.5px solid #E8E8E4",borderRadius:12,overflow:"hidden"}}>
+        {logs.map((l,i) => <div key={l.id} style={{padding:"13px 16px",borderBottom:i<logs.length-1?"0.5px solid #F0F0EC":"none"}}>
+          <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
+            <span style={{fontSize:13,fontWeight:600,color:"#222"}}>{l.plat}</span>
+            <Tag color={l.statut==="conforme"?"green":"red"}>
+              {l.temperature}°C {l.temperature_conforme?"✓":"⚠️"}
+            </Tag>
+          </div>
+          <div style={{fontSize:11,color:"#888"}}>{new Date(l.date).toLocaleDateString("fr-FR")} à {l.heure_debut?.slice(0,5)}</div>
+          {l.action_corrective && <div style={{fontSize:11,color:"#A32D2D",marginTop:4}}>⚠️ {l.action_corrective}</div>}
         </div>)}
       </div>
     }
