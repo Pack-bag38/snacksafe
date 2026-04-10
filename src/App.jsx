@@ -585,6 +585,7 @@ function ClientApp({ session, profile, onLogout }) {
     {id:"checklist",icon:"✅",label:"Checklist"},
     {id:"reglementation",icon:"📋",label:"Réglements"},
     {id:"rapports",icon:"📊",label:"Rapports"},
+    {id:"reception",icon:"📦",label:"Réception"},
   ]
   return (
     <div style={{fontFamily:"'DM Sans','Trebuchet MS',sans-serif",maxWidth:460,margin:"0 auto",background:"#FAFAF8",minHeight:"100vh",display:"flex",flexDirection:"column"}}>
@@ -606,6 +607,7 @@ function ClientApp({ session, profile, onLogout }) {
         {page==="checklist" && <PageChecklist profile={profile}/>}
         {page==="reglementation" && <PageReglementation/>}
         {page==="rapports" && <PageRapports profile={profile}/>}
+        {page==="reception" && <PageReception profile={profile}/>}
       </div>
       <div style={{position:"fixed",bottom:0,left:"50%",transform:"translateX(-50%)",width:"100%",maxWidth:460,background:"#fff",borderTop:"0.5px solid #E8E8E4",display:"flex",padding:"4px 8px 8px",zIndex:10}}>
         {NAV.map(n => <button key={n.id} onClick={()=>setPage(n.id)} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:3,padding:"8px 2px",border:"none",borderRadius:8,cursor:"pointer",fontFamily:"inherit",background:page===n.id?"#E1F5EE":"transparent"}}>
@@ -770,7 +772,142 @@ function PageChecklist({ profile }) {
     </div>
   </div>
 }
+function PageReception({ profile }) {
+  const [receptions, setReceptions] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [showForm, setShowForm] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [msg, setMsg] = useState("")
+  const tenantId = profile?.tenant_id
+  const [form, setForm] = useState({
+    fournisseur: "", produit: "", temperature: "",
+    dlc: "", aspect_visuel: "conforme",
+    etiquetage_conforme: true, stockage_separe: true,
+    statut: "accepte", commentaire: ""
+  })
 
+  useEffect(() => { if (tenantId) loadReceptions() }, [tenantId])
+
+  const loadReceptions = async () => {
+    setLoading(true)
+    const { data } = await supabase.from("receptions").select("*")
+      .eq("tenant_id", tenantId).order("created_at", { ascending: false }).limit(20)
+    setReceptions(data || [])
+    setLoading(false)
+  }
+
+  const handleSubmit = async () => {
+    if (!form.fournisseur || !form.produit) { setMsg("Fournisseur et produit obligatoires"); return }
+    setSaving(true)
+    const temp = form.temperature ? parseFloat(form.temperature) : null
+    const temp_conforme = temp !== null ? temp <= 4 : null
+    const dlc_conforme = form.dlc ? new Date(form.dlc) >= new Date() : null
+    const { error } = await supabase.from("receptions").insert([{
+      tenant_id: tenantId,
+      fournisseur: form.fournisseur,
+      produit: form.produit,
+      temperature: temp,
+      temperature_conforme: temp_conforme,
+      dlc: form.dlc || null,
+      dlc_conforme,
+      aspect_visuel: form.aspect_visuel,
+      etiquetage_conforme: form.etiquetage_conforme,
+      stockage_separe: form.stockage_separe,
+      statut: form.statut,
+      commentaire: form.commentaire,
+    }])
+    if (error) setMsg("Erreur : " + error.message)
+    else {
+      setMsg("✅ Fiche enregistrée !")
+      setForm({ fournisseur:"", produit:"", temperature:"", dlc:"", aspect_visuel:"conforme", etiquetage_conforme:true, stockage_separe:true, statut:"accepte", commentaire:"" })
+      setShowForm(false)
+      loadReceptions()
+    }
+    setSaving(false)
+    setTimeout(() => setMsg(""), 3000)
+  }
+
+  return <div>
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
+      <div style={{fontSize:13,color:"#888"}}>{receptions.length} fiche(s)</div>
+      <button onClick={()=>setShowForm(!showForm)} style={{padding:"8px 16px",background:"#1D9E75",color:"#fff",border:"none",borderRadius:8,cursor:"pointer",fontFamily:"inherit",fontSize:12,fontWeight:600}}>+ Nouvelle fiche</button>
+    </div>
+
+    {msg && <div style={{padding:"10px 14px",background:msg.includes("✅")?"#E1F5EE":"#FCEBEB",color:msg.includes("✅")?"#085041":"#501313",borderRadius:8,marginBottom:12,fontSize:13}}>{msg}</div>}
+
+    {showForm && <div style={{background:"#fff",border:"1px solid #1D9E75",borderRadius:12,padding:16,marginBottom:16}}>
+      <div style={{fontSize:13,fontWeight:700,color:"#222",marginBottom:14}}>📦 Nouvelle réception</div>
+
+      {[["Fournisseur *","fournisseur","text"],["Produit *","produit","text"],["Température (°C)","temperature","number"],["DLC / DDM","dlc","date"]].map(([label,key,type]) =>
+        <div key={key} style={{marginBottom:10}}>
+          <label style={{fontSize:11,color:"#666",display:"block",marginBottom:4}}>{label}</label>
+          <input type={type} value={form[key]} onChange={e=>setForm(p=>({...p,[key]:e.target.value}))}
+            style={{width:"100%",padding:"8px 12px",border:"1px solid #E0E0DC",borderRadius:8,fontSize:13,outline:"none",boxSizing:"border-box"}}/>
+        </div>
+      )}
+
+      <div style={{marginBottom:10}}>
+        <label style={{fontSize:11,color:"#666",display:"block",marginBottom:4}}>Aspect visuel</label>
+        <select value={form.aspect_visuel} onChange={e=>setForm(p=>({...p,aspect_visuel:e.target.value}))}
+          style={{width:"100%",padding:"8px 12px",border:"1px solid #E0E0DC",borderRadius:8,fontSize:13,outline:"none",background:"#fff"}}>
+          <option value="conforme">✅ Conforme</option>
+          <option value="non_conforme">❌ Non conforme</option>
+          <option value="acceptable">⚠️ Acceptable</option>
+        </select>
+      </div>
+
+      {[["etiquetage_conforme","🏷️ Étiquetage conforme"],["stockage_separe","📦 Stockage cru/cuit séparé"]].map(([key,label]) =>
+        <div key={key} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 0",borderBottom:"0.5px solid #F0F0EC"}}>
+          <span style={{fontSize:13,color:"#222"}}>{label}</span>
+          <button onClick={()=>setForm(p=>({...p,[key]:!p[key]}))}
+            style={{padding:"4px 14px",borderRadius:20,border:"none",cursor:"pointer",fontFamily:"inherit",fontSize:12,fontWeight:600,background:form[key]?"#1D9E75":"#E0E0DC",color:form[key]?"#fff":"#666"}}>
+            {form[key]?"Oui":"Non"}
+          </button>
+        </div>
+      )}
+
+      <div style={{marginTop:12,marginBottom:10}}>
+        <label style={{fontSize:11,color:"#666",display:"block",marginBottom:4}}>Statut final</label>
+        <select value={form.statut} onChange={e=>setForm(p=>({...p,statut:e.target.value}))}
+          style={{width:"100%",padding:"8px 12px",border:"1px solid #E0E0DC",borderRadius:8,fontSize:13,outline:"none",background:"#fff"}}>
+          <option value="accepte">✅ Accepté</option>
+          <option value="refuse">❌ Refusé</option>
+          <option value="reserve">⚠️ Accepté avec réserve</option>
+        </select>
+      </div>
+
+      <div style={{marginBottom:14}}>
+        <label style={{fontSize:11,color:"#666",display:"block",marginBottom:4}}>Commentaire</label>
+        <textarea value={form.commentaire} onChange={e=>setForm(p=>({...p,commentaire:e.target.value}))} rows={2}
+          style={{width:"100%",padding:"8px 12px",border:"1px solid #E0E0DC",borderRadius:8,fontSize:13,outline:"none",boxSizing:"border-box",fontFamily:"inherit"}}/>
+      </div>
+
+      <div style={{display:"flex",gap:8}}>
+        <button onClick={handleSubmit} disabled={saving} style={{padding:"8px 20px",background:"#1D9E75",color:"#fff",border:"none",borderRadius:8,cursor:"pointer",fontFamily:"inherit",fontSize:12,fontWeight:600}}>{saving?"...":"Enregistrer"}</button>
+        <button onClick={()=>setShowForm(false)} style={{padding:"8px 16px",background:"#fff",color:"#666",border:"1px solid #E0E0DC",borderRadius:8,cursor:"pointer",fontFamily:"inherit",fontSize:12}}>Annuler</button>
+      </div>
+    </div>}
+
+    {loading ? <div style={{color:"#888",fontSize:13,textAlign:"center",padding:20}}>Chargement...</div> :
+      receptions.length === 0 ? <div style={{background:"#fff",border:"0.5px solid #E8E8E4",borderRadius:12,padding:24,textAlign:"center"}}>
+        <div style={{fontSize:32,marginBottom:8}}>📦</div>
+        <div style={{fontSize:13,color:"#888"}}>Aucune réception enregistrée</div>
+      </div> :
+      <div style={{background:"#fff",border:"0.5px solid #E8E8E4",borderRadius:12,overflow:"hidden"}}>
+        {receptions.map((r,i) => <div key={r.id} style={{padding:"13px 16px",borderBottom:i<receptions.length-1?"0.5px solid #F0F0EC":"none"}}>
+          <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
+            <span style={{fontSize:13,fontWeight:600,color:"#222"}}>{r.produit}</span>
+            <Tag color={r.statut==="accepte"?"green":r.statut==="refuse"?"red":"amber"}>
+              {r.statut==="accepte"?"✅ Accepté":r.statut==="refuse"?"❌ Refusé":"⚠️ Réserve"}
+            </Tag>
+          </div>
+          <div style={{fontSize:11,color:"#888"}}>{r.fournisseur} · {new Date(r.date).toLocaleDateString("fr-FR")}</div>
+          {r.temperature && <div style={{fontSize:11,color:r.temperature_conforme?"#0F6E56":"#A32D2D",marginTop:2}}>🌡️ {r.temperature}°C {r.temperature_conforme?"✓":"⚠️"}</div>}
+        </div>)}
+      </div>
+    }
+  </div>
+}
 function PageReglementation() {
   const [cat, setCat] = useState("Tous")
   const cats = ["Tous",...Array.from(new Set(REGLEMENTS.map(r=>r.categorie)))]
