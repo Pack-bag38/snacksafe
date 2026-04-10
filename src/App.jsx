@@ -718,7 +718,7 @@ function PageChecklist({ profile }) {
       .eq("date", today)
     if (data) {
       const map = {}
-      data.forEach(row => { map[row.item_id] = row.checked })
+      data.forEach(row => { map[row.item_id] = row.is_checked })
       setChecked(map)
     }
     setLoading(false)
@@ -731,7 +731,7 @@ function PageChecklist({ profile }) {
       tenant_id: tenantId,
       date: today,
       item_id: id,
-      checked: newVal,
+    is_checked: newVal,
     }], { onConflict: "tenant_id,date,item_id" })
   }
 
