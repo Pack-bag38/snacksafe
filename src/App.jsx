@@ -773,7 +773,7 @@ function PageChecklist({ profile }) {
     </div>
   </div>
 }
-function PageReception({ profile }) {
+function PageReception({ profile }) { 
   const [receptions, setReceptions] = useState([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
@@ -908,6 +908,7 @@ function PageReception({ profile }) {
       </div>
     }
   </div>
+  }
   function PageMaintienChaud({ profile }) {
   const [logs, setLogs] = useState([])
   const [loading, setLoading] = useState(true)
