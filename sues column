@@ -1,0 +1,22 @@
+[1mdiff --git a/src/App.jsx b/src/App.jsx[m
+[1mindex c0e4847..190300d 100644[m
+[1m--- a/src/App.jsx[m
+[1m+++ b/src/App.jsx[m
+[36m@@ -718,7 +718,7 @@[m [mfunction PageChecklist({ profile }) {[m
+       .eq("date", today)[m
+     if (data) {[m
+       const map = {}[m
+[31m-      data.forEach(row => { map[row.item_id] = row.checked })[m
+[32m+[m[32m      data.forEach(row => { map[row.item_id] = row.is_checked })[m
+       setChecked(map)[m
+     }[m
+     setLoading(false)[m
+[36m@@ -731,7 +731,7 @@[m [mfunction PageChecklist({ profile }) {[m
+       tenant_id: tenantId,[m
+       date: today,[m
+       item_id: id,[m
+[31m-      checked: newVal,[m
+[32m+[m[32m    is_checked: newVal,[m
+     }], { onConflict: "tenant_id,date,item_id" })[m
+   }[m
+ [m

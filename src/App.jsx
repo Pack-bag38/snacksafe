@@ -371,7 +371,7 @@ function PageRapports({ profile }) {
     const score = total > 0 ? Math.round((conformes / total) * 100) : 0
     const { error } = await supabase.from("daily_reports").upsert([{
       tenant_id: tenantId, report_date: today, score,
-      checklist_pct: 0, temp_alerts: alerts, ccp_issues: alerts,
+      checklist_pct: 0, temp_alerts: alerts,
       summary: `Rapport du ${new Date().toLocaleDateString("fr-FR")} — ${total} relevés, ${conformes} conformes, ${alerts} alertes.`,
     }], { onConflict: "tenant_id,report_date" })
     if (error) setMsg("Erreur : " + error.message)
