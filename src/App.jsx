@@ -603,7 +603,7 @@ function ClientApp({ session, profile, onLogout }) {
       <div style={{flex:1,padding:"16px 16px 80px",overflow:"auto"}}>
         {page==="dashboard" && <PageDashboard setPage={setPage} profile={profile}/>}
         {page==="equipements" && <PageEquipements profile={profile}/>}
-        {page==="checklist" && <PageChecklist/>}
+        {page==="checklist" && <PageChecklist profile={profile}/>}
         {page==="reglementation" && <PageReglementation/>}
         {page==="rapports" && <PageRapports profile={profile}/>}
       </div>
@@ -698,18 +698,54 @@ function PageHACCP() {
   </div>
 }
 
-function PageChecklist() {
+function PageChecklist({ profile }) {
   const [tab, setTab] = useState("ouverture")
   const [checked, setChecked] = useState({})
-  const toggle = (id) => setChecked(p=>({...p,[id]:!p[id]}))
+  const [loading, setLoading] = useState(true)
+  const tenantId = profile?.tenant_id
+  const today = new Date().toISOString().split("T")[0]
+
+  useEffect(() => {
+    if (tenantId) loadChecklist()
+  }, [tenantId])
+
+  const loadChecklist = async () => {
+    setLoading(true)
+    const { data } = await supabase
+      .from("checklist_logs")
+      .select("*")
+      .eq("tenant_id", tenantId)
+      .eq("date", today)
+    if (data) {
+      const map = {}
+      data.forEach(row => { map[row.item_id] = row.checked })
+      setChecked(map)
+    }
+    setLoading(false)
+  }
+
+  const toggle = async (id) => {
+    const newVal = !checked[id]
+    setChecked(p => ({ ...p, [id]: newVal }))
+    await supabase.from("checklist_logs").upsert([{
+      tenant_id: tenantId,
+      date: today,
+      item_id: id,
+      checked: newVal,
+    }], { onConflict: "tenant_id,date,item_id" })
+  }
+
   const items = CHECKLIST_ITEMS[tab]
-  const done = items.filter(i=>checked[i.id]).length
-  const pct = Math.round((done/items.length)*100)
+  const done = items.filter(i => checked[i.id]).length
+  const pct = Math.round((done / items.length) * 100)
+
+  if (loading) return <div style={{color:"#888",fontSize:13,textAlign:"center",padding:40}}>Chargement...</div>
+
   return <div>
     <div style={{display:"flex",gap:6,marginBottom:16,background:"#F0F0EC",borderRadius:10,padding:4}}>
       {["ouverture","service","fermeture"].map(t => {
-        const d = CHECKLIST_ITEMS[t].filter(i=>checked[i.id]).length
-        return <button key={t} onClick={()=>setTab(t)} style={{flex:1,padding:"8px 6px",border:"none",borderRadius:8,cursor:"pointer",fontFamily:"inherit",background:tab===t?"#fff":"transparent",color:tab===t?"#0F6E56":"#888",fontWeight:tab===t?600:400,fontSize:11}}>
+        const d = CHECKLIST_ITEMS[t].filter(i => checked[i.id]).length
+        return <button key={t} onClick={() => setTab(t)} style={{flex:1,padding:"8px 6px",border:"none",borderRadius:8,cursor:"pointer",fontFamily:"inherit",background:tab===t?"#fff":"transparent",color:tab===t?"#0F6E56":"#888",fontWeight:tab===t?600:400,fontSize:11}}>
           {t.charAt(0).toUpperCase()+t.slice(1)}<br/><span style={{fontSize:10,color:"#aaa"}}>{d}/{CHECKLIST_ITEMS[t].length}</span>
         </button>
       })}
@@ -733,7 +769,7 @@ function PageChecklist() {
       </div>)}
     </div>
   </div>
-}
+}}
 
 function PageReglementation() {
   const [cat, setCat] = useState("Tous")
