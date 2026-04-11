@@ -381,26 +381,86 @@ function PageRapports({ profile }) {
     setTimeout(() => setMsg(""), 3000)
   }
 
-  const exportPDF = (rapport) => {
+  const exportPDF = async (rapport) => {
+  const date = rapport.report_date
+  const dateFR = new Date(date).toLocaleDateString("fr-FR", {weekday:"long", day:"numeric", month:"long", year:"numeric"})
+
+  const [{ data: tempLogs }, { data: checklogs }, { data: receptions }, { data: actions }] = await Promise.all([
+    supabase.from("temperature_logs").select("*").eq("tenant_id", tenantId).gte("recorded_at", date).lt("recorded_at", new Date(new Date(date).getTime() + 86400000).toISOString().split("T")[0]),
+    supabase.from("checklist_logs").select("*").eq("tenant_id", tenantId).eq("date", date),
+    supabase.from("receptions").select("*").eq("tenant_id", tenantId).eq("date", date),
+    supabase.from("actions_correctives").select("*").eq("tenant_id", tenantId).eq("date", date),
+  ])
+
   const doc = new jsPDF()
-  const date = new Date(rapport.report_date).toLocaleDateString("fr-FR")
+  let y = 45
+
   doc.setFillColor(29, 158, 117)
-  doc.rect(0, 0, 210, 30, "F")
+  doc.rect(0, 0, 210, 35, "F")
   doc.setTextColor(255, 255, 255)
-  doc.setFontSize(20)
-  doc.text("SnackSafe", 14, 15)
-  doc.setFontSize(10)
-  doc.text("Rapport HACCP journalier", 14, 23)
+  doc.setFontSize(22)
+  doc.text("SnackSafe", 14, 16)
+  doc.setFontSize(11)
+  doc.text("Rapport HACCP journalier", 14, 24)
+  doc.text(dateFR, 14, 31)
+
   doc.setTextColor(0, 0, 0)
-  doc.setFontSize(14)
-  doc.text(`Rapport du ${date}`, 14, 45)
-  doc.setFontSize(12)
-  doc.text(`Score de conformite : ${rapport.score}/100`, 14, 58)
-  doc.text(`Alertes : ${rapport.temp_alerts}`, 14, 68)
-  doc.text(`Resume : ${rapport.summary}`, 14, 78, { maxWidth: 180 })
-  doc.setFontSize(8)
-  doc.setTextColor(150, 150, 150)
-  doc.text("Genere par SnackSafe", 14, 280)
+  doc.setFontSize(13)
+  doc.setFillColor(240, 248, 244)
+  doc.rect(14, y-6, 182, 12, "F")
+  doc.text(`Score global : ${rapport.score}/100`, 16, y)
+  y += 14
+
+  const section = (titre) => {
+    doc.setFontSize(12)
+    doc.setTextColor(29, 158, 117)
+    doc.text(titre, 14, y)
+    y += 7
+    doc.setTextColor(0, 0, 0)
+    doc.setFontSize(10)
+  }
+
+  section("Relevés de température")
+  if (tempLogs?.length > 0) {
+    tempLogs.forEach(l => {
+      const h = new Date(l.recorded_at).toLocaleTimeString("fr-FR", {hour:"2-digit", minute:"2-digit"})
+      doc.text(`• ${l.zone} : ${l.value}°C — ${l.is_compliant ? "Conforme" : "Non conforme"} (${h})`, 16, y)
+      y += 6; if (y > 275) { doc.addPage(); y = 20 }
+    })
+  } else { doc.text("Aucun relevé", 16, y); y += 6 }
+  y += 4
+
+  section("Checklist")
+  const checkedCount = checklogs?.filter(c => c.is_checked).length || 0
+  doc.text(`Tâches complétées : ${checkedCount}/${checklogs?.length || 0}`, 16, y); y += 6
+  y += 4
+
+  section("Réceptions marchandises")
+  if (receptions?.length > 0) {
+    receptions.forEach(r => {
+      doc.text(`• ${r.produit} (${r.fournisseur}) — ${r.statut === "accepte" ? "Accepté" : r.statut === "refuse" ? "Refusé" : "Réserve"}`, 16, y)
+      y += 6; if (y > 275) { doc.addPage(); y = 20 }
+    })
+  } else { doc.text("Aucune réception", 16, y); y += 6 }
+  y += 4
+
+  section("Actions correctives")
+  if (actions?.length > 0) {
+    actions.forEach(a => {
+      doc.text(`• ${a.description} — ${a.statut}`, 16, y)
+      y += 6; if (y > 275) { doc.addPage(); y = 20 }
+    })
+  } else { doc.text("Aucune action corrective", 16, y); y += 6 }
+
+  const pageCount = doc.getNumberOfPages()
+  for (let i = 1; i <= pageCount; i++) {
+    doc.setPage(i)
+    doc.setFontSize(8)
+    doc.setTextColor(150, 150, 150)
+    doc.text("Généré par SnackSafe", 14, 290)
+    doc.text(`Page ${i}/${pageCount}`, 185, 290)
+  }
+
   doc.save(`rapport-haccp-${date}.pdf`)
 }
   const scoreColor = (s) => s >= 80 ? "ok" : s >= 60 ? "warn" : "bad"
