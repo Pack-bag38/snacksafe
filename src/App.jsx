@@ -579,13 +579,16 @@ function SuperAdmin({ session, onLogout }) {
 
 function ClientApp({ session, profile, onLogout }) {
   const [page, setPage] = useState("dashboard")
-  const NAV = [
+  const NAV_ROW1 = [
   {id:"dashboard",icon:"🏠",label:"Accueil"},
   {id:"equipements",icon:"🌡️",label:"Temp."},
   {id:"checklist",icon:"✅",label:"Checklist"},
   {id:"rapports",icon:"📊",label:"Rapports"},
+]
+const NAV_ROW2 = [
   {id:"reception",icon:"📦",label:"Réception"},
   {id:"maintien",icon:"🔥",label:"Chaud"},
+  {id:"refroidissement",icon:"❄️",label:"Froid"},
   {id:"actions",icon:"⚠️",label:"Actions"},
 ]
   return (
@@ -610,16 +613,23 @@ function ClientApp({ session, profile, onLogout }) {
         {page==="rapports" && <PageRapports profile={profile}/>}
         {page==="reception" && <PageReception profile={profile}/>}
         {page==="maintien" && <PageMaintienChaud profile={profile}/>}
+        {page==="refroidissement" && <PageRefroidissement profile={profile}/>}
+        {page==="actions" && <PageActionsCorrectives profile={profile}/>}
       </div>
-      <div style={{position:"fixed",bottom:0,left:"50%",transform:"translateX(-50%)",width:"100%",maxWidth:460,background:"#fff",borderTop:"0.5px solid #E8E8E4",display:"flex",padding:"4px 8px 8px",zIndex:10}}>
-        {NAV.map(n => <button key={n.id} onClick={()=>setPage(n.id)} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:3,padding:"8px 2px",border:"none",borderRadius:8,cursor:"pointer",fontFamily:"inherit",background:page===n.id?"#E1F5EE":"transparent"}}>
-          <span style={{fontSize:18}}>{n.icon}</span>
-          <span style={{fontSize:9,color:page===n.id?"#0F6E56":"#888",fontWeight:page===n.id?600:400}}>{n.label}</span>
-        </button>)}
-      </div>
-    </div>
-  )
-}
+      <div style={{position:"fixed",bottom:0,left:"50%",transform:"translateX(-50%)",width:"100%",maxWidth:460,background:"#fff",borderTop:"0.5px solid #E8E8E4"}}>
+  <div style={{display:"flex"}}>
+    {NAV_ROW1.map(n => <button key={n.id} onClick={()=>setPage(n.id)} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:3,padding:"6px 2px",border:"none",borderBottom:"0.5px solid #E8E8E4",cursor:"pointer",fontFamily:"inherit",background:"transparent"}}>
+      <span style={{fontSize:18}}>{n.icon}</span>
+      <span style={{fontSize:9,color:page===n.id?"#0F6E56":"#888",fontWeight:page===n.id?600:400}}>{n.label}</span>
+    </button>)}
+  </div>
+  <div style={{display:"flex"}}>
+    {NAV_ROW2.map(n => <button key={n.id} onClick={()=>setPage(n.id)} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:3,padding:"6px 2px",border:"none",cursor:"pointer",fontFamily:"inherit",background:"transparent"}}>
+      <span style={{fontSize:18}}>{n.icon}</span>
+      <span style={{fontSize:9,color:page===n.id?"#0F6E56":"#888",fontWeight:page===n.id?600:400}}>{n.label}</span>
+    </button>)}
+  </div>
+</div>
 
 function PageDashboard({ setPage, profile }) {
   const [todayAlerts, setTodayAlerts] = useState([])
