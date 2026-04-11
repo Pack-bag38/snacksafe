@@ -667,6 +667,8 @@ const [pinInput, setPinInput] = useState("")
 
 function ClientApp({ session, profile, onLogout }) {
   const [page, setPage] = useState("dashboard")
+  const [pinOk, setPinOk] = useState(false)
+const [pinInput, setPinInput] = useState("")
   const NAV_ROW1 = [
   {id:"dashboard",icon:"🏠",label:"Accueil"},
   {id:"equipements",icon:"🌡️",label:"Temp."},
