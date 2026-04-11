@@ -716,6 +716,7 @@ const [pinInput, setPinInput] = useState("")
   {id:"rapports",icon:"📊",label:"Rapports"},
 ]
 const NAV_ROW2 = [
+  {id:"parametres",icon:"⚙️",label:"Paramètres"},
   {id:"reception",icon:"📦",label:"Réception"},
   {id:"maintien",icon:"🔥",label:"Chaud"},
   {id:"refroidissement",icon:"❄️",label:"Froid"},
@@ -737,6 +738,7 @@ const NAV_ROW2 = [
       </div>
       <div style={{flex:1,padding:"16px 16px 80px",overflow:"auto"}}>
         {page==="dashboard" && <PageDashboard setPage={setPage} profile={profile}/>}
+        {page==="parametres" && <PageParametres profile={profile}/>}
         {page==="equipements" && <PageEquipements profile={profile}/>}
         {page==="checklist" && <PageChecklist profile={profile}/>}
         {page==="reglementation" && <PageReglementation/>}
