@@ -1,3 +1,4 @@
+import jsPDF from 'jspdf'
 import { useState, useEffect } from 'react'
 import { supabase } from '../supabase'
 
@@ -351,7 +352,7 @@ function PageRapports({ profile }) {
   const [generating, setGenerating] = useState(false)
   const [msg, setMsg] = useState("")
   const tenantId = profile?.tenant_id
-
+  
   useEffect(() => { if (tenantId) loadRapports() }, [tenantId])
 
   const loadRapports = async () => {
@@ -380,6 +381,28 @@ function PageRapports({ profile }) {
     setTimeout(() => setMsg(""), 3000)
   }
 
+  const exportPDF = (rapport) => {
+  const doc = new jsPDF()
+  const date = new Date(rapport.report_date).toLocaleDateString("fr-FR")
+  doc.setFillColor(29, 158, 117)
+  doc.rect(0, 0, 210, 30, "F")
+  doc.setTextColor(255, 255, 255)
+  doc.setFontSize(20)
+  doc.text("SnackSafe", 14, 15)
+  doc.setFontSize(10)
+  doc.text("Rapport HACCP journalier", 14, 23)
+  doc.setTextColor(0, 0, 0)
+  doc.setFontSize(14)
+  doc.text(`Rapport du ${date}`, 14, 45)
+  doc.setFontSize(12)
+  doc.text(`Score de conformite : ${rapport.score}/100`, 14, 58)
+  doc.text(`Alertes : ${rapport.temp_alerts}`, 14, 68)
+  doc.text(`Resume : ${rapport.summary}`, 14, 78, { maxWidth: 180 })
+  doc.setFontSize(8)
+  doc.setTextColor(150, 150, 150)
+  doc.text("Genere par SnackSafe", 14, 280)
+  doc.save(`rapport-haccp-${date}.pdf`)
+}
   const scoreColor = (s) => s >= 80 ? "ok" : s >= 60 ? "warn" : "bad"
 
   return (
@@ -410,6 +433,9 @@ function PageRapports({ profile }) {
                       {r.temp_alerts > 0 && <Tag color="red">{r.temp_alerts} alerte{r.temp_alerts>1?"s":""}</Tag>}
                       <Tag color={st==="ok"?"green":st==="warn"?"amber":"red"}>Score : {r.score || 0}/100</Tag>
                     </div>
+                    <button onClick={()=>exportPDF(r)} style={{marginTop:8,padding:"4px 12px",background:"#E6F1FB",color:"#042C53",border:"none",borderRadius:6,cursor:"pointer",fontFamily:"inherit",fontSize:11,fontWeight:600}}>
+  📄 Exporter PDF
+</button>
                   </div>
                 </div>
               </div>
