@@ -586,6 +586,7 @@ function ClientApp({ session, profile, onLogout }) {
   {id:"rapports",icon:"📊",label:"Rapports"},
   {id:"reception",icon:"📦",label:"Réception"},
   {id:"maintien",icon:"🔥",label:"Chaud"},
+  {id:"actions",icon:"⚠️",label:"Actions"},
 ]
   return (
     <div style={{fontFamily:"'DM Sans','Trebuchet MS',sans-serif",maxWidth:460,margin:"0 auto",background:"#FAFAF8",minHeight:"100vh",display:"flex",flexDirection:"column"}}>
@@ -1027,6 +1028,145 @@ function PageReception({ profile }) {
           </div>
           <div style={{fontSize:11,color:"#888"}}>{new Date(l.date).toLocaleDateString("fr-FR")} à {l.heure_debut?.slice(0,5)}</div>
           {l.action_corrective && <div style={{fontSize:11,color:"#A32D2D",marginTop:4}}>⚠️ {l.action_corrective}</div>}
+        </div>)}
+      </div>
+    }
+  </div>
+}
+function PageActionsCorrectives({ profile }) {
+  const [actions, setActions] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [showForm, setShowForm] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [msg, setMsg] = useState("")
+  const tenantId = profile?.tenant_id
+  const [form, setForm] = useState({
+    source: "temperature", description: "", action_prise: "",
+    responsable: "", statut: "en_cours", date_resolution: ""
+  })
+
+  useEffect(() => { if (tenantId) loadActions() }, [tenantId])
+
+  const loadActions = async () => {
+    setLoading(true)
+    const { data } = await supabase.from("actions_correctives").select("*")
+      .eq("tenant_id", tenantId).order("created_at", { ascending: false }).limit(20)
+    setActions(data || [])
+    setLoading(false)
+  }
+
+  const handleSubmit = async () => {
+    if (!form.description || !form.action_prise) {
+      setMsg("Description et action prise obligatoires"); return
+    }
+    setSaving(true)
+    const { error } = await supabase.from("actions_correctives").insert([{
+      tenant_id: tenantId,
+      source: form.source,
+      description: form.description,
+      action_prise: form.action_prise,
+      responsable: form.responsable || null,
+      statut: form.statut,
+      date_resolution: form.date_resolution || null,
+    }])
+    if (error) setMsg("Erreur : " + error.message)
+    else {
+      setMsg("✅ Action enregistrée !")
+      setForm({ source:"temperature", description:"", action_prise:"", responsable:"", statut:"en_cours", date_resolution:"" })
+      setShowForm(false)
+      loadActions()
+    }
+    setSaving(false)
+    setTimeout(() => setMsg(""), 3000)
+  }
+
+  const updateStatut = async (id, statut) => {
+    await supabase.from("actions_correctives").update({ statut, date_resolution: statut === "resolue" ? new Date().toISOString().split("T")[0] : null }).eq("id", id)
+    loadActions()
+  }
+
+  const statutColor = (s) => s === "resolue" ? "green" : s === "en_cours" ? "amber" : "red"
+  const statutLabel = (s) => s === "resolue" ? "✅ Résolue" : s === "en_cours" ? "⏳ En cours" : "🚨 Critique"
+
+  return <div>
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
+      <div style={{fontSize:13,color:"#888"}}>{actions.filter(a=>a.statut!=="resolue").length} action(s) en cours</div>
+      <button onClick={()=>setShowForm(!showForm)} style={{padding:"8px 16px",background:"#1D9E75",color:"#fff",border:"none",borderRadius:8,cursor:"pointer",fontFamily:"inherit",fontSize:12,fontWeight:600}}>+ Nouvelle action</button>
+    </div>
+
+    {msg && <div style={{padding:"10px 14px",background:msg.includes("✅")?"#E1F5EE":"#FCEBEB",color:msg.includes("✅")?"#085041":"#501313",borderRadius:8,marginBottom:12,fontSize:13}}>{msg}</div>}
+
+    {showForm && <div style={{background:"#fff",border:"1px solid #1D9E75",borderRadius:12,padding:16,marginBottom:16}}>
+      <div style={{fontSize:13,fontWeight:700,color:"#222",marginBottom:14}}>⚠️ Nouvelle action corrective</div>
+
+      <div style={{marginBottom:10}}>
+        <label style={{fontSize:11,color:"#666",display:"block",marginBottom:4}}>Source du problème</label>
+        <select value={form.source} onChange={e=>setForm(p=>({...p,source:e.target.value}))}
+          style={{width:"100%",padding:"8px 12px",border:"1px solid #E0E0DC",borderRadius:8,fontSize:13,outline:"none",background:"#fff"}}>
+          <option value="temperature">🌡️ Température non conforme</option>
+          <option value="reception">📦 Réception marchandises</option>
+          <option value="hygiene">🧹 Hygiène</option>
+          <option value="equipement">🔧 Équipement défaillant</option>
+          <option value="haccp">⚠️ Non-conformité HACCP</option>
+          <option value="autre">📝 Autre</option>
+        </select>
+      </div>
+
+      <div style={{marginBottom:10}}>
+        <label style={{fontSize:11,color:"#666",display:"block",marginBottom:4}}>Description du problème *</label>
+        <textarea value={form.description} onChange={e=>setForm(p=>({...p,description:e.target.value}))} rows={2}
+          placeholder="Ex: Frigo cuisine à 8°C depuis ce matin..."
+          style={{width:"100%",padding:"8px 12px",border:"1px solid #E0E0DC",borderRadius:8,fontSize:13,outline:"none",boxSizing:"border-box",fontFamily:"inherit"}}/>
+      </div>
+
+      <div style={{marginBottom:10}}>
+        <label style={{fontSize:11,color:"#666",display:"block",marginBottom:4}}>Action prise *</label>
+        <textarea value={form.action_prise} onChange={e=>setForm(p=>({...p,action_prise:e.target.value}))} rows={2}
+          placeholder="Ex: Transfert des produits, appel technicien..."
+          style={{width:"100%",padding:"8px 12px",border:"1px solid #E0E0DC",borderRadius:8,fontSize:13,outline:"none",boxSizing:"border-box",fontFamily:"inherit"}}/>
+      </div>
+
+      <div style={{marginBottom:10}}>
+        <label style={{fontSize:11,color:"#666",display:"block",marginBottom:4}}>Responsable</label>
+        <input value={form.responsable} onChange={e=>setForm(p=>({...p,responsable:e.target.value}))}
+          placeholder="Ex: Chef de cuisine, Gérant..."
+          style={{width:"100%",padding:"8px 12px",border:"1px solid #E0E0DC",borderRadius:8,fontSize:13,outline:"none",boxSizing:"border-box"}}/>
+      </div>
+
+      <div style={{marginBottom:14}}>
+        <label style={{fontSize:11,color:"#666",display:"block",marginBottom:4}}>Statut</label>
+        <select value={form.statut} onChange={e=>setForm(p=>({...p,statut:e.target.value}))}
+          style={{width:"100%",padding:"8px 12px",border:"1px solid #E0E0DC",borderRadius:8,fontSize:13,outline:"none",background:"#fff"}}>
+          <option value="en_cours">⏳ En cours</option>
+          <option value="resolue">✅ Résolue</option>
+          <option value="critique">🚨 Critique</option>
+        </select>
+      </div>
+
+      <div style={{display:"flex",gap:8}}>
+        <button onClick={handleSubmit} disabled={saving} style={{padding:"8px 20px",background:"#1D9E75",color:"#fff",border:"none",borderRadius:8,cursor:"pointer",fontFamily:"inherit",fontSize:12,fontWeight:600}}>{saving?"...":"Enregistrer"}</button>
+        <button onClick={()=>setShowForm(false)} style={{padding:"8px 16px",background:"#fff",color:"#666",border:"1px solid #E0E0DC",borderRadius:8,cursor:"pointer",fontFamily:"inherit",fontSize:12}}>Annuler</button>
+      </div>
+    </div>}
+
+    {loading ? <div style={{color:"#888",fontSize:13,textAlign:"center",padding:20}}>Chargement...</div> :
+      actions.length === 0 ? <div style={{background:"#fff",border:"0.5px solid #E8E8E4",borderRadius:12,padding:24,textAlign:"center"}}>
+        <div style={{fontSize:32,marginBottom:8}}>⚠️</div>
+        <div style={{fontSize:13,color:"#888"}}>Aucune action corrective</div>
+      </div> :
+      <div style={{background:"#fff",border:"0.5px solid #E8E8E4",borderRadius:12,overflow:"hidden"}}>
+        {actions.map((a,i) => <div key={a.id} style={{padding:"13px 16px",borderBottom:i<actions.length-1?"0.5px solid #F0F0EC":"none"}}>
+          <div style={{display:"flex",justifyContent:"space-between",marginBottom:6}}>
+            <Tag color={statutColor(a.statut)}>{statutLabel(a.statut)}</Tag>
+            <span style={{fontSize:10,color:"#aaa"}}>{new Date(a.date).toLocaleDateString("fr-FR")}</span>
+          </div>
+          <div style={{fontSize:13,fontWeight:600,color:"#222",marginBottom:4}}>{a.description}</div>
+          <div style={{fontSize:11,color:"#555",marginBottom:6}}>→ {a.action_prise}</div>
+          {a.responsable && <div style={{fontSize:11,color:"#888"}}>👤 {a.responsable}</div>}
+          {a.statut !== "resolue" && <button onClick={()=>updateStatut(a.id,"resolue")}
+            style={{marginTop:8,padding:"4px 12px",background:"#E1F5EE",color:"#085041",border:"none",borderRadius:6,cursor:"pointer",fontFamily:"inherit",fontSize:11,fontWeight:600}}>
+            Marquer résolue ✅
+          </button>}
         </div>)}
       </div>
     }
