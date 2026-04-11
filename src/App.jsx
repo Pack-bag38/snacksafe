@@ -509,6 +509,8 @@ function PageRapports({ profile }) {
 
 function SuperAdmin({ session, onLogout }) {
   const [page, setPage] = useState("dashboard")
+  const [pinOk, setPinOk] = useState(false)
+const [pinInput, setPinInput] = useState("")
   const [tenants, setTenants] = useState([])
   const [loading, setLoading] = useState(true)
   const [showNewClient, setShowNewClient] = useState(false)
@@ -696,7 +698,23 @@ const NAV_ROW2 = [
         {page==="equipements" && <PageEquipements profile={profile}/>}
         {page==="checklist" && <PageChecklist profile={profile}/>}
         {page==="reglementation" && <PageReglementation/>}
-        {page==="rapports" && <PageRapports profile={profile}/>}
+        {page==="rapports" && (
+  pinOk || !profile?.rapport_pin ? 
+    <PageRapports profile={profile}/> :
+    <div style={{background:"#fff",borderRadius:16,padding:32,textAlign:"center",margin:"20px 0"}}>
+      <div style={{fontSize:32,marginBottom:12}}>🔒</div>
+      <div style={{fontSize:15,fontWeight:700,color:"#222",marginBottom:4}}>Accès protégé</div>
+      <div style={{fontSize:12,color:"#888",marginBottom:20}}>Entrez le code PIN pour accéder aux rapports</div>
+      <input type="password" maxLength={4} value={pinInput} onChange={e=>setPinInput(e.target.value)}
+        placeholder="••••"
+        style={{width:120,padding:"10px 12px",border:"2px solid #E0E0DC",borderRadius:8,fontSize:20,outline:"none",textAlign:"center",letterSpacing:8,marginBottom:12}}/>
+      <br/>
+      <button onClick={()=>{if(pinInput===profile?.rapport_pin){setPinOk(true)}else{setPinInput("");alert("Code PIN incorrect")}}}
+        style={{padding:"10px 24px",background:"#1D9E75",color:"#fff",border:"none",borderRadius:8,cursor:"pointer",fontFamily:"inherit",fontSize:13,fontWeight:600}}>
+        Valider
+      </button>
+    </div>
+)}
         {page==="reception" && <PageReception profile={profile}/>}
         {page==="maintien" && <PageMaintienChaud profile={profile}/>}
         {page==="refroidissement" && <PageRefroidissement profile={profile}/>}
