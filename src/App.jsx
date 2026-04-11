@@ -345,6 +345,46 @@ function PageEquipements({ profile }) {
     </div>
   )
 }
+function PageParametres({ profile }) {
+  const [pin, setPin] = useState(profile?.rapport_pin || "")
+  const [msg, setMsg] = useState("")
+  const [saving, setSaving] = useState(false)
+
+  const savePin = async () => {
+    if (pin && pin.length !== 4) { setMsg("Le PIN doit contenir 4 chiffres"); return }
+    setSaving(true)
+    const { error } = await supabase.from("profiles")
+      .update({ rapport_pin: pin || null })
+      .eq("id", profile.id)
+    if (error) setMsg("Erreur : " + error.message)
+    else setMsg("✅ PIN mis à jour !")
+    setSaving(false)
+    setTimeout(() => setMsg(""), 3000)
+  }
+
+  return <div>
+    <div style={{background:"#fff",border:"0.5px solid #E8E8E4",borderRadius:12,padding:20,marginBottom:16}}>
+      <div style={{fontSize:13,fontWeight:700,color:"#222",marginBottom:4}}>🔒 Code PIN Rapports</div>
+      <div style={{fontSize:11,color:"#888",marginBottom:16}}>Protège l'accès à la page Rapports avec un code à 4 chiffres</div>
+      <label style={{fontSize:11,color:"#666",display:"block",marginBottom:4}}>Code PIN (4 chiffres)</label>
+      <input type="password" maxLength={4} value={pin} onChange={e=>setPin(e.target.value)}
+        placeholder="••••"
+        style={{width:"100%",padding:"10px 12px",border:"1px solid #E0E0DC",borderRadius:8,fontSize:18,outline:"none",boxSizing:"border-box",letterSpacing:8,textAlign:"center",marginBottom:8}}/>
+      <div style={{fontSize:11,color:"#aaa",marginBottom:12}}>Laissez vide pour désactiver le PIN</div>
+      {msg && <div style={{padding:"8px 12px",background:msg.includes("✅")?"#E1F5EE":"#FCEBEB",color:msg.includes("✅")?"#085041":"#501313",borderRadius:8,marginBottom:12,fontSize:12}}>{msg}</div>}
+      <button onClick={savePin} disabled={saving}
+        style={{width:"100%",padding:12,background:"#1D9E75",color:"#fff",border:"none",borderRadius:8,cursor:"pointer",fontFamily:"inherit",fontSize:13,fontWeight:600}}>
+        {saving ? "Enregistrement..." : "💾 Sauvegarder le PIN"}
+      </button>
+    </div>
+
+    <div style={{background:"#fff",border:"0.5px solid #E8E8E4",borderRadius:12,padding:20}}>
+      <div style={{fontSize:13,fontWeight:700,color:"#222",marginBottom:4}}>👤 Mon compte</div>
+      <div style={{fontSize:12,color:"#555",marginBottom:4}}>Email : {profile?.id}</div>
+      <div style={{fontSize:12,color:"#555"}}>Rôle : {profile?.role === "client" ? "Manager" : profile?.role}</div>
+    </div>
+  </div>
+}
 
 function PageRapports({ profile }) {
   const [rapports, setRapports] = useState([])
