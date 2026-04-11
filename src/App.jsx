@@ -104,6 +104,46 @@ const Tag = ({ children, color = "green" }) => {
   return <span style={{fontSize:10,fontWeight:600,padding:"2px 8px",borderRadius:20,background:c.bg,color:c.text}}>{children}</span>
 }
 
+const ICON_PATHS = {
+  home:     "M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6",
+  temp:     "M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z",
+  check:    "M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z",
+  report:   "M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z",
+  settings: "M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065zM15 12a3 3 0 11-6 0 3 3 0 016 0z",
+  box:      "M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4",
+  fire:     "M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A8 8 0 0117.657 18.657z",
+  snow:     "M12 2v20M12 2l3 3M12 2l-3 3M12 22l3-3M12 22l-3-3M2 12h20M2 12l3 3M2 12l3-3M22 12l-3 3M22 12l-3-3",
+  warning:  "M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z",
+  alert:    "M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z",
+  shield:   "M12 2L4 6v6c0 5.25 3.5 10.15 8 11.35C16.5 22.15 20 17.25 20 12V6L12 2z",
+  clip:     "M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2",
+}
+
+const Icon = ({ name, size = 16, color = "currentColor" }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" style={{display:"block",flexShrink:0}}>
+    <path d={ICON_PATHS[name]} stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+      fill={name === "shield" ? color : "none"}/>
+  </svg>
+)
+
+const NavBtn = ({ icon, label, active, onClick, accent }) => (
+  <button onClick={onClick} style={{
+    flex:1, display:"flex", flexDirection:"column", alignItems:"center", gap:3,
+    padding:"6px 2px", border:"none", cursor:"pointer", fontFamily:"inherit",
+    background: active ? "rgba(45,212,191,0.08)" : "transparent",
+    borderRadius:8, margin:"0 1px",
+  }}>
+    <div style={{
+      width:28, height:28, borderRadius:8, display:"flex", alignItems:"center", justifyContent:"center",
+      background: active ? "#2DD4BF" : accent ? "#FEF3C7" : "transparent",
+    }}>
+      <Icon name={icon} size={14} color={active ? "#1A2E44" : accent ? "#F59E0B" : "#94A3B8"} />
+    </div>
+    <span style={{fontSize:9, fontWeight: active ? 600 : 400, color: active ? "#2DD4BF" : accent ? "#F59E0B" : "#94A3B8"}}>
+      {label}
+    </span>
+  </button>
+)
 function PageEquipements({ profile }) {
   const [equipements, setEquipements] = useState([])
   const [logs, setLogs] = useState([])
@@ -708,79 +748,91 @@ const [pinInput, setPinInput] = useState("")
 function ClientApp({ session, profile, onLogout }) {
   const [page, setPage] = useState("dashboard")
   const [pinOk, setPinOk] = useState(false)
-const [pinInput, setPinInput] = useState("")
+  const [pinInput, setPinInput] = useState("")
+
   const NAV_ROW1 = [
-  {id:"dashboard",icon:"🏠",label:"Accueil"},
-  {id:"equipements",icon:"🌡️",label:"Temp."},
-  {id:"checklist",icon:"✅",label:"Checklist"},
-  {id:"rapports",icon:"📊",label:"Rapports"},
-]
-const NAV_ROW2 = [
-  {id:"parametres",icon:"⚙️",label:"Paramètres"},
-  {id:"reception",icon:"📦",label:"Réception"},
-  {id:"maintien",icon:"🔥",label:"Chaud"},
-  {id:"refroidissement",icon:"❄️",label:"Froid"},
-  {id:"actions",icon:"⚠️",label:"Actions"},
-]
+    { id:"dashboard",   icon:"home",     label:"Accueil"    },
+    { id:"equipements", icon:"temp",     label:"Temp."      },
+    { id:"checklist",   icon:"check",    label:"Checklist"  },
+    { id:"rapports",    icon:"report",   label:"Rapports"   },
+    { id:"parametres",  icon:"settings", label:"Paramètres" },
+  ]
+  const NAV_ROW2 = [
+    { id:"reception",       icon:"box",     label:"Réception" },
+    { id:"maintien",        icon:"fire",    label:"Chaud"     },
+    { id:"refroidissement", icon:"snow",    label:"Froid"     },
+    { id:"actions",         icon:"warning", label:"Actions",  accent:true },
+  ]
+
   return (
-    <div style={{fontFamily:"'DM Sans','Trebuchet MS',sans-serif",maxWidth:460,margin:"0 auto",background:"#FAFAF8",minHeight:"100vh",display:"flex",flexDirection:"column"}}>
-      <div style={{background:"#fff",borderBottom:"0.5px solid #E8E8E4",padding:"14px 20px 12px",position:"sticky",top:0,zIndex:10}}>
-        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+    <div style={{fontFamily:"'DM Sans','Trebuchet MS',sans-serif",maxWidth:460,margin:"0 auto",background:"#F7F8FA",minHeight:"100vh",display:"flex",flexDirection:"column"}}>
+
+      {/* HEADER */}
+      <div style={{background:"#1A2E44",padding:"18px 20px 14px",position:"sticky",top:0,zIndex:10}}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}>
           <div style={{display:"flex",alignItems:"center",gap:10}}>
-            <div style={{width:34,height:34,background:"#1D9E75",borderRadius:10,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18}}>🛡️</div>
+            <div style={{width:36,height:36,background:"#2DD4BF",borderRadius:10,display:"flex",alignItems:"center",justifyContent:"center"}}>
+              <Icon name="shield" size={20} color="#1A2E44" />
+            </div>
             <div>
-              <div style={{fontSize:16,fontWeight:700,color:"#1a1a1a"}}>SnackSafe</div>
-              <div style={{fontSize:10,color:"#888"}}>HACCP · Hygiène · Réglementation</div>
+              <div style={{fontSize:16,fontWeight:600,color:"#fff"}}>SnackSafe</div>
+              <div style={{fontSize:10,color:"#64748B"}}>HACCP · Hygiène · Réglementation</div>
             </div>
           </div>
-          <button onClick={onLogout} style={{fontSize:11,padding:"5px 12px",background:"#fff",border:"1px solid #E0E0DC",borderRadius:8,cursor:"pointer",fontFamily:"inherit",color:"#666"}}>Déconnexion</button>
+          <button onClick={onLogout} style={{fontSize:11,padding:"6px 13px",background:"rgba(255,255,255,0.08)",border:"0.5px solid rgba(255,255,255,0.15)",borderRadius:8,cursor:"pointer",fontFamily:"inherit",color:"#94A3B8"}}>
+            Déconnexion
+          </button>
+        </div>
+        <div style={{paddingTop:10,borderTop:"0.5px solid rgba(255,255,255,0.06)"}}>
+          <span style={{fontSize:12,color:"#64748B",textTransform:"capitalize"}}>
+            {new Date().toLocaleDateString("fr-FR",{weekday:"long",day:"numeric",month:"long"})}
+          </span>
         </div>
       </div>
-      <div style={{flex:1,padding:"16px 16px 80px",overflow:"auto"}}>
-        {page==="dashboard" && <PageDashboard setPage={setPage} profile={profile}/>}
-        {page==="parametres" && <PageParametres profile={profile}/>}
-        {page==="equipements" && <PageEquipements profile={profile}/>}
-        {page==="checklist" && <PageChecklist profile={profile}/>}
-        {page==="reglementation" && <PageReglementation/>}
+
+      {/* CONTENT */}
+      <div style={{flex:1,padding:"16px 14px 110px",overflow:"auto"}}>
+        {page==="dashboard"       && <PageDashboard setPage={setPage} profile={profile}/>}
+        {page==="parametres"      && <PageParametres profile={profile}/>}
+        {page==="equipements"     && <PageEquipements profile={profile}/>}
+        {page==="checklist"       && <PageChecklist profile={profile}/>}
+        {page==="reglementation"  && <PageReglementation/>}
         {page==="rapports" && (
-  pinOk || !profile?.rapport_pin ? 
-    <PageRapports profile={profile}/> :
-    <div style={{background:"#fff",borderRadius:16,padding:32,textAlign:"center",margin:"20px 0"}}>
-      <div style={{fontSize:32,marginBottom:12}}>🔒</div>
-      <div style={{fontSize:15,fontWeight:700,color:"#222",marginBottom:4}}>Accès protégé</div>
-      <div style={{fontSize:12,color:"#888",marginBottom:20}}>Entrez le code PIN pour accéder aux rapports</div>
-      <input type="password" maxLength={4} value={pinInput} onChange={e=>setPinInput(e.target.value)}
-        placeholder="••••"
-        style={{width:120,padding:"10px 12px",border:"2px solid #E0E0DC",borderRadius:8,fontSize:20,outline:"none",textAlign:"center",letterSpacing:8,marginBottom:12}}/>
-      <br/>
-      <button onClick={()=>{if(pinInput===profile?.rapport_pin){setPinOk(true)}else{setPinInput("");alert("Code PIN incorrect")}}}
-        style={{padding:"10px 24px",background:"#1D9E75",color:"#fff",border:"none",borderRadius:8,cursor:"pointer",fontFamily:"inherit",fontSize:13,fontWeight:600}}>
-        Valider
-      </button>
-    </div>
-)}
-        {page==="reception" && <PageReception profile={profile}/>}
-        {page==="maintien" && <PageMaintienChaud profile={profile}/>}
+          pinOk || !profile?.rapport_pin ?
+            <PageRapports profile={profile}/> :
+            <div style={{background:"#fff",borderRadius:16,padding:32,textAlign:"center",margin:"20px 0"}}>
+              <div style={{fontSize:32,marginBottom:12}}>🔒</div>
+              <div style={{fontSize:15,fontWeight:600,color:"#222",marginBottom:4}}>Accès protégé</div>
+              <div style={{fontSize:12,color:"#888",marginBottom:20}}>Entrez le code PIN pour accéder aux rapports</div>
+              <input type="password" maxLength={4} value={pinInput} onChange={e=>setPinInput(e.target.value)}
+                placeholder="••••" style={{width:120,padding:"10px 12px",border:"2px solid #E0E0DC",borderRadius:8,fontSize:20,outline:"none",textAlign:"center",letterSpacing:8,marginBottom:12}}/>
+              <br/>
+              <button onClick={()=>{if(pinInput===profile?.rapport_pin){setPinOk(true)}else{setPinInput("");alert("Code PIN incorrect")}}}
+                style={{padding:"10px 24px",background:"#1D9E75",color:"#fff",border:"none",borderRadius:8,cursor:"pointer",fontFamily:"inherit",fontSize:13,fontWeight:600}}>
+                Valider
+              </button>
+            </div>
+        )}
+        {page==="reception"       && <PageReception profile={profile}/>}
+        {page==="maintien"        && <PageMaintienChaud profile={profile}/>}
         {page==="refroidissement" && <PageRefroidissement profile={profile}/>}
-        {page==="actions" && <PageActionsCorrectives profile={profile}/>}
+        {page==="actions"         && <PageActionsCorrectives profile={profile}/>}
       </div>
-      <div style={{position:"fixed",bottom:0,left:"50%",transform:"translateX(-50%)",width:"100%",maxWidth:460,background:"#fff",borderTop:"0.5px solid #E8E8E4"}}>
-  <div style={{display:"flex"}}>
-    {NAV_ROW1.map(n => <button key={n.id} onClick={()=>setPage(n.id)} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:3,padding:"6px 2px",border:"none",borderBottom:"0.5px solid #E8E8E4",cursor:"pointer",fontFamily:"inherit",background:"transparent"}}>
-      <span style={{fontSize:18}}>{n.icon}</span>
-      <span style={{fontSize:9,color:page===n.id?"#0F6E56":"#888",fontWeight:page===n.id?600:400}}>{n.label}</span>
-    </button>)}
-  </div>
-  <div style={{display:"flex"}}>
-    {NAV_ROW2.map(n => <button key={n.id} onClick={()=>setPage(n.id)} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:3,padding:"6px 2px",border:"none",cursor:"pointer",fontFamily:"inherit",background:"transparent"}}>
-      <span style={{fontSize:18}}>{n.icon}</span>
-      <span style={{fontSize:9,color:page===n.id?"#0F6E56":"#888",fontWeight:page===n.id?600:400}}>{n.label}</span>
-    </button>)}
-</div>
-  </div>
-  </div>
-)
+
+      {/* BOTTOM NAV */}
+      <div style={{position:"fixed",bottom:0,left:"50%",transform:"translateX(-50%)",width:"100%",maxWidth:460,background:"#fff",borderTop:"0.5px solid #E8E8E4",paddingBottom:"env(safe-area-inset-bottom)"}}>
+        <div style={{display:"flex",padding:"6px 4px 2px"}}>
+          {NAV_ROW1.map(n => <NavBtn key={n.id} icon={n.icon} label={n.label} active={page===n.id} onClick={()=>setPage(n.id)}/>)}
+        </div>
+        <div style={{height:"0.5px",background:"#F0F0EC",margin:"0 12px"}}/>
+        <div style={{display:"flex",padding:"2px 4px 6px"}}>
+          {NAV_ROW2.map(n => <NavBtn key={n.id} icon={n.icon} label={n.label} active={page===n.id} onClick={()=>setPage(n.id)} accent={n.accent}/>)}
+        </div>
+      </div>
+    </div>
+  )
 }
+
 function PageDashboard({ setPage, profile }) {
   const [todayAlerts, setTodayAlerts] = useState([])
   const tenantId = profile?.tenant_id
@@ -793,38 +845,64 @@ function PageDashboard({ setPage, profile }) {
     }
   }, [tenantId])
 
-  const today = new Date().toLocaleDateString("fr-FR",{weekday:"long",day:"numeric",month:"long"})
   return (
     <div>
-      <div style={{fontSize:12,color:"#888",marginBottom:16,textTransform:"capitalize"}}>{today}</div>
-      {todayAlerts.length > 0 && <div style={{marginBottom:16}}>
-        {todayAlerts.map((a,i) => <div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 14px",background:"#FCEBEB",borderLeft:"3px solid #E24B4A",borderRadius:8,marginBottom:6}}>
-          <span style={{fontSize:14}}>🚨</span>
-          <span style={{fontSize:12,color:"#A32D2D",fontWeight:500}}>{a.zone} : {a.value}°C — Non conforme</span>
-        </div>)}
-      </div>}
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:16}}>
+      {todayAlerts.length > 0 && (
+        <div style={{marginBottom:14}}>
+          {todayAlerts.map((a,i) => (
+            <div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"11px 14px",background:"#FEF2F2",border:"1px solid #FECACA",borderLeft:"4px solid #EF4444",borderRadius:12,marginBottom:6}}>
+              <div style={{width:30,height:30,background:"#FEE2E2",borderRadius:8,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                <Icon name="alert" size={15} color="#EF4444"/>
+              </div>
+              <div>
+                <div style={{fontSize:13,fontWeight:500,color:"#991B1B"}}>{a.zone} : {a.value}°C</div>
+                <div style={{fontSize:11,color:"#B91C1C"}}>Température non conforme · Vérifier maintenant</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:14}}>
         {[
-          {label:"Alertes aujourd'hui",val:todayAlerts.length,sub:"températures non conformes",color:todayAlerts.length>0?"#A32D2D":"#0F6E56"},
-          {label:"CCP conformes",val:`${HACCP_POINTS.filter(h=>h.status==="ok").length}/${HACCP_POINTS.length}`,sub:"Points critiques",color:"#0F6E56"},
-          {label:"Dernière inspection",val:"OK",sub:"Il y a 12 jours",color:"#185FA5"},
-          {label:"Formation requise",val:"Non",sub:"Tous formés",color:"#0F6E56"},
-        ].map((k,i) => <div key={i} style={{background:"#fff",border:"0.5px solid #E8E8E4",borderRadius:12,padding:"14px 16px"}}>
-          <div style={{fontSize:11,color:"#888",marginBottom:6}}>{k.label}</div>
-          <div style={{fontSize:22,fontWeight:700,color:k.color}}>{k.val}</div>
-          <div style={{fontSize:11,color:"#aaa",marginTop:2}}>{k.sub}</div>
-        </div>)}
+          { label:"Alertes",    val:todayAlerts.length, sub:"aujourd'hui",     iconName:"warning", iconBg:"#FEE2E2", iconColor:"#EF4444", valColor:todayAlerts.length>0?"#EF4444":"#10B981" },
+          { label:"CCP",        val:`${HACCP_POINTS.filter(h=>h.status==="ok").length}/${HACCP_POINTS.length}`, sub:"points conformes", iconName:"check", iconBg:"#D1FAE5", iconColor:"#10B981", valColor:"#1A2E44" },
+          { label:"Inspection", val:"OK",   sub:"il y a 12 jours", iconName:"clip",  iconBg:"#DBEAFE", iconColor:"#3B82F6", valColor:"#10B981" },
+          { label:"Formation",  val:"100%", sub:"tous formés",     iconName:"check", iconBg:"#D1FAE5", iconColor:"#10B981", valColor:"#10B981" },
+        ].map((k,i) => (
+          <div key={i} style={{background:"#fff",borderRadius:14,padding:"13px 14px",border:"0.5px solid #E2E8F0"}}>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
+              <span style={{fontSize:10,color:"#94A3B8",textTransform:"uppercase",letterSpacing:"0.5px"}}>{k.label}</span>
+              <div style={{width:24,height:24,background:k.iconBg,borderRadius:6,display:"flex",alignItems:"center",justifyContent:"center"}}>
+                <Icon name={k.iconName} size={12} color={k.iconColor}/>
+              </div>
+            </div>
+            <div style={{fontSize:24,fontWeight:500,color:k.valColor,lineHeight:1}}>{k.val}</div>
+            <div style={{fontSize:10,color:"#94A3B8",marginTop:3}}>{k.sub}</div>
+          </div>
+        ))}
       </div>
+
+      <p style={{margin:"0 0 9px",fontSize:11,color:"#94A3B8",textTransform:"uppercase",letterSpacing:"0.5px"}}>Actions rapides</p>
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
         {[
-          {label:"Saisir températures",icon:"🌡️",page:"equipements",bg:"#E6F1FB",color:"#042C53"},
-          {label:"Checklist",icon:"✅",page:"checklist",bg:"#E1F5EE",color:"#085041"},
-          {label:"Réglementation",icon:"📋",page:"reglementation",bg:"#EEEDFE",color:"#26215C"},
-          {label:"Rapports",icon:"📊",page:"rapports",bg:"#FAEEDA",color:"#412402"},
-        ].map((q,i) => <button key={i} onClick={()=>setPage(q.page)} style={{background:q.bg,border:"none",borderRadius:10,padding:"14px 16px",textAlign:"left",cursor:"pointer",fontFamily:"inherit"}}>
-          <div style={{fontSize:20,marginBottom:6}}>{q.icon}</div>
-          <div style={{fontSize:12,fontWeight:600,color:q.color}}>{q.label}</div>
-        </button>)}
+          { label:"Températures",   sub:"Saisir",          page:"equipements",    iconName:"temp",    iconColor:"#2DD4BF", iconBg:"rgba(45,212,191,0.2)", dark:true  },
+          { label:"Checklist",      sub:"Journalière",     page:"checklist",      iconName:"check",   iconColor:"#10B981", iconBg:"#D1FAE5",              dark:false },
+          { label:"Réglementation", sub:"Normes & guides", page:"reglementation", iconName:"clip",    iconColor:"#3B82F6", iconBg:"#DBEAFE",              dark:false },
+          { label:"Rapports",       sub:"Export PDF",      page:"rapports",       iconName:"report",  iconColor:"#F59E0B", iconBg:"#FEF3C7",              dark:false },
+        ].map((q,i) => (
+          <button key={i} onClick={()=>setPage(q.page)} style={{
+            background: q.dark ? "#1A2E44" : "#fff",
+            border: q.dark ? "none" : "0.5px solid #E2E8F0",
+            borderRadius:14, padding:"14px", textAlign:"left", cursor:"pointer", fontFamily:"inherit",
+          }}>
+            <div style={{width:32,height:32,background:q.iconBg,borderRadius:8,display:"flex",alignItems:"center",justifyContent:"center",marginBottom:10}}>
+              <Icon name={q.iconName} size={16} color={q.iconColor}/>
+            </div>
+            <div style={{fontSize:12,fontWeight:500,color:q.dark?"#fff":"#1A2E44"}}>{q.label}</div>
+            <div style={{fontSize:10,color:q.dark?"#64748B":"#94A3B8",marginTop:2}}>{q.sub}</div>
+          </button>
+        ))}
       </div>
     </div>
   )
