@@ -786,18 +786,20 @@ function PageChecklist({ profile }) {
     </div>
   </div>
 }
-function PageReception({ profile }) { 
+function PageReception({ profile }) {
   const [receptions, setReceptions] = useState([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [saving, setSaving] = useState(false)
   const [msg, setMsg] = useState("")
+  const [uploading, setUploading] = useState(false)
   const tenantId = profile?.tenant_id
   const [form, setForm] = useState({
     fournisseur: "", produit: "", temperature: "",
-    dlc: "", aspect_visuel: "conforme",
-    etiquetage_conforme: true, stockage_separe: true,
-    statut: "accepte", commentaire: ""
+    dlc: "", aspect_visuel: "conforme", origine: "",
+    numero_lot: "", etiquetage_conforme: true,
+    stockage_separe: true, statut: "accepte",
+    commentaire: "", photo_url: ""
   })
 
   useEffect(() => { if (tenantId) loadReceptions() }, [tenantId])
@@ -808,6 +810,18 @@ function PageReception({ profile }) {
       .eq("tenant_id", tenantId).order("created_at", { ascending: false }).limit(20)
     setReceptions(data || [])
     setLoading(false)
+  }
+
+  const handlePhoto = async (e) => {
+    const file = e.target.files[0]
+    if (!file) return
+    setUploading(true)
+    const fileName = `${tenantId}/${Date.now()}_${file.name}`
+    const { data, error } = await supabase.storage.from("receptions").upload(fileName, file)
+    if (error) { setMsg("Erreur upload : " + error.message); setUploading(false); return }
+    const { data: urlData } = supabase.storage.from("receptions").getPublicUrl(fileName)
+    setForm(p => ({ ...p, photo_url: urlData.publicUrl }))
+    setUploading(false)
   }
 
   const handleSubmit = async () => {
@@ -829,11 +843,14 @@ function PageReception({ profile }) {
       stockage_separe: form.stockage_separe,
       statut: form.statut,
       commentaire: form.commentaire,
+      origine: form.origine || null,
+      numero_lot: form.numero_lot || null,
+      photo_url: form.photo_url || null,
     }])
     if (error) setMsg("Erreur : " + error.message)
     else {
       setMsg("✅ Fiche enregistrée !")
-      setForm({ fournisseur:"", produit:"", temperature:"", dlc:"", aspect_visuel:"conforme", etiquetage_conforme:true, stockage_separe:true, statut:"accepte", commentaire:"" })
+      setForm({ fournisseur:"", produit:"", temperature:"", dlc:"", aspect_visuel:"conforme", origine:"", numero_lot:"", etiquetage_conforme:true, stockage_separe:true, statut:"accepte", commentaire:"", photo_url:"" })
       setShowForm(false)
       loadReceptions()
     }
@@ -859,6 +876,21 @@ function PageReception({ profile }) {
             style={{width:"100%",padding:"8px 12px",border:"1px solid #E0E0DC",borderRadius:8,fontSize:13,outline:"none",boxSizing:"border-box"}}/>
         </div>
       )}
+
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:10}}>
+        <div>
+          <label style={{fontSize:11,color:"#666",display:"block",marginBottom:4}}>🌍 Origine</label>
+          <input value={form.origine} onChange={e=>setForm(p=>({...p,origine:e.target.value}))}
+            placeholder="Ex: France, Espagne..."
+            style={{width:"100%",padding:"8px 12px",border:"1px solid #E0E0DC",borderRadius:8,fontSize:13,outline:"none",boxSizing:"border-box"}}/>
+        </div>
+        <div>
+          <label style={{fontSize:11,color:"#666",display:"block",marginBottom:4}}>🏷️ N° de lot</label>
+          <input value={form.numero_lot} onChange={e=>setForm(p=>({...p,numero_lot:e.target.value}))}
+            placeholder="Ex: LOT2024..."
+            style={{width:"100%",padding:"8px 12px",border:"1px solid #E0E0DC",borderRadius:8,fontSize:13,outline:"none",boxSizing:"border-box"}}/>
+        </div>
+      </div>
 
       <div style={{marginBottom:10}}>
         <label style={{fontSize:11,color:"#666",display:"block",marginBottom:4}}>Aspect visuel</label>
@@ -890,14 +922,23 @@ function PageReception({ profile }) {
         </select>
       </div>
 
-      <div style={{marginBottom:14}}>
+      <div style={{marginBottom:10}}>
         <label style={{fontSize:11,color:"#666",display:"block",marginBottom:4}}>Commentaire</label>
         <textarea value={form.commentaire} onChange={e=>setForm(p=>({...p,commentaire:e.target.value}))} rows={2}
           style={{width:"100%",padding:"8px 12px",border:"1px solid #E0E0DC",borderRadius:8,fontSize:13,outline:"none",boxSizing:"border-box",fontFamily:"inherit"}}/>
       </div>
 
+      <div style={{marginBottom:14}}>
+        <label style={{fontSize:11,color:"#666",display:"block",marginBottom:4}}>📷 Photo bon de livraison</label>
+        <input type="file" accept="image/*" capture="environment" onChange={handlePhoto}
+          style={{width:"100%",fontSize:12,color:"#666"}}/>
+        {uploading && <div style={{fontSize:11,color:"#888",marginTop:4}}>⏳ Upload en cours...</div>}
+        {form.photo_url && <img src={form.photo_url} alt="bon de livraison"
+          style={{width:"100%",borderRadius:8,marginTop:8,maxHeight:200,objectFit:"cover"}}/>}
+      </div>
+
       <div style={{display:"flex",gap:8}}>
-        <button onClick={handleSubmit} disabled={saving} style={{padding:"8px 20px",background:"#1D9E75",color:"#fff",border:"none",borderRadius:8,cursor:"pointer",fontFamily:"inherit",fontSize:12,fontWeight:600}}>{saving?"...":"Enregistrer"}</button>
+        <button onClick={handleSubmit} disabled={saving||uploading} style={{padding:"8px 20px",background:"#1D9E75",color:"#fff",border:"none",borderRadius:8,cursor:"pointer",fontFamily:"inherit",fontSize:12,fontWeight:600}}>{saving?"...":"Enregistrer"}</button>
         <button onClick={()=>setShowForm(false)} style={{padding:"8px 16px",background:"#fff",color:"#666",border:"1px solid #E0E0DC",borderRadius:8,cursor:"pointer",fontFamily:"inherit",fontSize:12}}>Annuler</button>
       </div>
     </div>}
@@ -916,12 +957,14 @@ function PageReception({ profile }) {
             </Tag>
           </div>
           <div style={{fontSize:11,color:"#888"}}>{r.fournisseur} · {new Date(r.date).toLocaleDateString("fr-FR")}</div>
+          {r.origine && <div style={{fontSize:11,color:"#555",marginTop:2}}>🌍 {r.origine} {r.numero_lot && `· Lot: ${r.numero_lot}`}</div>}
           {r.temperature && <div style={{fontSize:11,color:r.temperature_conforme?"#0F6E56":"#A32D2D",marginTop:2}}>🌡️ {r.temperature}°C {r.temperature_conforme?"✓":"⚠️"}</div>}
+          {r.photo_url && <img src={r.photo_url} alt="bon" style={{width:"100%",borderRadius:8,marginTop:8,maxHeight:150,objectFit:"cover"}}/>}
         </div>)}
       </div>
     }
   </div>
-  }
+}
   function PageRefroidissement({ profile }) {
   const [logs, setLogs] = useState([])
   const [loading, setLoading] = useState(true)
