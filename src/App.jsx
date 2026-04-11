@@ -628,9 +628,11 @@ const NAV_ROW2 = [
       <span style={{fontSize:18}}>{n.icon}</span>
       <span style={{fontSize:9,color:page===n.id?"#0F6E56":"#888",fontWeight:page===n.id?600:400}}>{n.label}</span>
     </button>)}
-  </div>
 </div>
-
+  </div>
+  </div>
+)
+}
 function PageDashboard({ setPage, profile }) {
   const [todayAlerts, setTodayAlerts] = useState([])
   const tenantId = profile?.tenant_id
