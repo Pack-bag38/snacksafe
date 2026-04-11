@@ -922,6 +922,140 @@ function PageReception({ profile }) {
     }
   </div>
   }
+  function PageRefroidissement({ profile }) {
+  const [logs, setLogs] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [showForm, setShowForm] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [msg, setMsg] = useState("")
+  const tenantId = profile?.tenant_id
+  const [form, setForm] = useState({
+    plat: "", heure_debut: "", heure_fin: "",
+    temp_debut: "", temp_fin: "", action_corrective: ""
+  })
+
+  useEffect(() => { if (tenantId) loadLogs() }, [tenantId])
+
+  const loadLogs = async () => {
+    setLoading(true)
+    const { data } = await supabase.from("refroidissement").select("*")
+      .eq("tenant_id", tenantId).order("created_at", { ascending: false }).limit(20)
+    setLogs(data || [])
+    setLoading(false)
+  }
+
+  const handleSubmit = async () => {
+    if (!form.plat || !form.heure_debut || !form.temp_debut) {
+      setMsg("Plat, heure de début et température initiale obligatoires"); return
+    }
+    setSaving(true)
+    const temp_debut = parseFloat(form.temp_debut)
+    const temp_fin = form.temp_fin ? parseFloat(form.temp_fin) : null
+    let conforme = null
+    if (temp_fin !== null && form.heure_debut && form.heure_fin) {
+      const [h1, m1] = form.heure_debut.split(":").map(Number)
+      const [h2, m2] = form.heure_fin.split(":").map(Number)
+      const dureeMin = (h2 * 60 + m2) - (h1 * 60 + m1)
+      conforme = temp_fin <= 10 && dureeMin <= 120
+    }
+    const { error } = await supabase.from("refroidissement").insert([{
+      tenant_id: tenantId, plat: form.plat,
+      heure_debut: form.heure_debut, heure_fin: form.heure_fin || null,
+      temp_debut, temp_fin, conforme,
+      action_corrective: conforme === false ? form.action_corrective : null,
+    }])
+    if (error) setMsg("Erreur : " + error.message)
+    else {
+      setMsg("✅ Relevé enregistré !")
+      setForm({ plat:"", heure_debut:"", heure_fin:"", temp_debut:"", temp_fin:"", action_corrective:"" })
+      setShowForm(false)
+      loadLogs()
+    }
+    setSaving(false)
+    setTimeout(() => setMsg(""), 3000)
+  }
+
+  const temp_fin_val = parseFloat(form.temp_fin)
+  const previewOk = form.temp_fin ? temp_fin_val <= 10 : null
+
+  return <div>
+    <div style={{background:"#E6F1FB",borderRadius:12,padding:"12px 16px",marginBottom:16,fontSize:12,color:"#042C53"}}>
+      ❄️ <strong>Règle HACCP</strong> — Refroidissement : <strong>de +63°C à +10°C en moins de 2h</strong>
+    </div>
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
+      <div style={{fontSize:13,color:"#888"}}>{logs.length} relevé(s)</div>
+      <button onClick={()=>setShowForm(!showForm)} style={{padding:"8px 16px",background:"#1D9E75",color:"#fff",border:"none",borderRadius:8,cursor:"pointer",fontFamily:"inherit",fontSize:12,fontWeight:600}}>+ Nouveau relevé</button>
+    </div>
+    {msg && <div style={{padding:"10px 14px",background:msg.includes("✅")?"#E1F5EE":"#FCEBEB",color:msg.includes("✅")?"#085041":"#501313",borderRadius:8,marginBottom:12,fontSize:13}}>{msg}</div>}
+    {showForm && <div style={{background:"#fff",border:"1px solid #1D9E75",borderRadius:12,padding:16,marginBottom:16}}>
+      <div style={{fontSize:13,fontWeight:700,color:"#222",marginBottom:14}}>❄️ Nouveau relevé refroidissement</div>
+      <div style={{marginBottom:10}}>
+        <label style={{fontSize:11,color:"#666",display:"block",marginBottom:4}}>Plat *</label>
+        <input value={form.plat} onChange={e=>setForm(p=>({...p,plat:e.target.value}))}
+          placeholder="Ex: Poulet rôti..."
+          style={{width:"100%",padding:"8px 12px",border:"1px solid #E0E0DC",borderRadius:8,fontSize:13,outline:"none",boxSizing:"border-box"}}/>
+      </div>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:10}}>
+        <div>
+          <label style={{fontSize:11,color:"#666",display:"block",marginBottom:4}}>Heure début *</label>
+          <input type="time" value={form.heure_debut} onChange={e=>setForm(p=>({...p,heure_debut:e.target.value}))}
+            style={{width:"100%",padding:"8px 12px",border:"1px solid #E0E0DC",borderRadius:8,fontSize:13,outline:"none",boxSizing:"border-box"}}/>
+        </div>
+        <div>
+          <label style={{fontSize:11,color:"#666",display:"block",marginBottom:4}}>Heure fin</label>
+          <input type="time" value={form.heure_fin} onChange={e=>setForm(p=>({...p,heure_fin:e.target.value}))}
+            style={{width:"100%",padding:"8px 12px",border:"1px solid #E0E0DC",borderRadius:8,fontSize:13,outline:"none",boxSizing:"border-box"}}/>
+        </div>
+      </div>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:10}}>
+        <div>
+          <label style={{fontSize:11,color:"#666",display:"block",marginBottom:4}}>T° début (°C) *</label>
+          <input type="number" step="0.1" value={form.temp_debut} onChange={e=>setForm(p=>({...p,temp_debut:e.target.value}))}
+            placeholder="Ex: 65"
+            style={{width:"100%",padding:"8px 12px",border:"1px solid #E0E0DC",borderRadius:8,fontSize:13,outline:"none",boxSizing:"border-box"}}/>
+        </div>
+        <div>
+          <label style={{fontSize:11,color:"#666",display:"block",marginBottom:4}}>T° fin (°C)</label>
+          <input type="number" step="0.1" value={form.temp_fin} onChange={e=>setForm(p=>({...p,temp_fin:e.target.value}))}
+            placeholder="Ex: 8"
+            style={{width:"100%",padding:"8px 12px",border:"1px solid #E0E0DC",borderRadius:8,fontSize:13,outline:"none",boxSizing:"border-box"}}/>
+          {previewOk !== null && <div style={{marginTop:4,fontSize:11,fontWeight:500,color:previewOk?"#0F6E56":"#A32D2D"}}>
+            {previewOk ? "✅ T° finale conforme" : "🚨 Non conforme (> 10°C)"}
+          </div>}
+        </div>
+      </div>
+      {previewOk === false && <div style={{marginBottom:10}}>
+        <label style={{fontSize:11,color:"#666",display:"block",marginBottom:4}}>Action corrective *</label>
+        <input value={form.action_corrective} onChange={e=>setForm(p=>({...p,action_corrective:e.target.value}))}
+          placeholder="Ex: Prolongation refroidissement..."
+          style={{width:"100%",padding:"8px 12px",border:"1px solid #E0E0DC",borderRadius:8,fontSize:13,outline:"none",boxSizing:"border-box"}}/>
+      </div>}
+      <div style={{display:"flex",gap:8,marginTop:4}}>
+        <button onClick={handleSubmit} disabled={saving} style={{padding:"8px 20px",background:"#1D9E75",color:"#fff",border:"none",borderRadius:8,cursor:"pointer",fontFamily:"inherit",fontSize:12,fontWeight:600}}>{saving?"...":"Enregistrer"}</button>
+        <button onClick={()=>setShowForm(false)} style={{padding:"8px 16px",background:"#fff",color:"#666",border:"1px solid #E0E0DC",borderRadius:8,cursor:"pointer",fontFamily:"inherit",fontSize:12}}>Annuler</button>
+      </div>
+    </div>}
+    {loading ? <div style={{color:"#888",fontSize:13,textAlign:"center",padding:20}}>Chargement...</div> :
+      logs.length === 0 ? <div style={{background:"#fff",border:"0.5px solid #E8E8E4",borderRadius:12,padding:24,textAlign:"center"}}>
+        <div style={{fontSize:32,marginBottom:8}}>❄️</div>
+        <div style={{fontSize:13,color:"#888"}}>Aucun relevé enregistré</div>
+      </div> :
+      <div style={{background:"#fff",border:"0.5px solid #E8E8E4",borderRadius:12,overflow:"hidden"}}>
+        {logs.map((l,i) => <div key={l.id} style={{padding:"13px 16px",borderBottom:i<logs.length-1?"0.5px solid #F0F0EC":"none"}}>
+          <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
+            <span style={{fontSize:13,fontWeight:600,color:"#222"}}>{l.plat}</span>
+            <Tag color={l.conforme===true?"green":l.conforme===false?"red":"amber"}>
+              {l.conforme===true?"✅ Conforme":l.conforme===false?"❌ Non conforme":"⏳ En cours"}
+            </Tag>
+          </div>
+          <div style={{fontSize:11,color:"#888"}}>{new Date(l.date).toLocaleDateString("fr-FR")} · {l.heure_debut?.slice(0,5)}{l.heure_fin?" → "+l.heure_fin?.slice(0,5):""}</div>
+          <div style={{fontSize:11,color:"#555",marginTop:2}}>{l.temp_debut}°C → {l.temp_fin !== null ? l.temp_fin+"°C" : "en cours..."}</div>
+          {l.action_corrective && <div style={{fontSize:11,color:"#A32D2D",marginTop:4}}>⚠️ {l.action_corrective}</div>}
+        </div>)}
+      </div>
+    }
+  </div>
+}
   function PageMaintienChaud({ profile }) {
   const [logs, setLogs] = useState([])
   const [loading, setLoading] = useState(true)
