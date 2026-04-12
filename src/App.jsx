@@ -1615,7 +1615,7 @@ function PageReglementation() {
   </div>
 }
 
-function Login() {
+function Login({ onShowRegister }) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -1629,12 +1629,14 @@ function Login() {
   }
 
   return (
-    <div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100vh",background:"#F5F5F2",fontFamily:"sans-serif"}}>
-      <div style={{background:"#fff",borderRadius:16,padding:"40px 36px",width:360,boxShadow:"0 4px 24px rgba(0,0,0,0.08)"}}>
+    <div style={{display:"flex",alignItems:"center",justifyContent:"center",minHeight:"100vh",background:"#F5F5F2",fontFamily:"sans-serif",padding:16}}>
+      <div style={{background:"#fff",borderRadius:16,padding:"40px 36px",width:"100%",maxWidth:360,boxShadow:"0 4px 24px rgba(0,0,0,0.08)"}}>
         <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:28}}>
-          <div style={{width:38,height:38,background:"#1D9E75",borderRadius:10,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20}}>🛡️</div>
+          <div style={{width:38,height:38,background:"#1A2E44",borderRadius:10,display:"flex",alignItems:"center",justifyContent:"center"}}>
+            <Icon name="shield" size={22} color="#2DD4BF"/>
+          </div>
           <div>
-            <div style={{fontSize:18,fontWeight:700,color:"#1a1a1a"}}>SnackSafe</div>
+            <div style={{fontSize:18,fontWeight:600,color:"#1A2E44"}}>SnackSafe</div>
             <div style={{fontSize:11,color:"#888"}}>HACCP · Hygiène · Réglementation</div>
           </div>
         </div>
@@ -1648,19 +1650,124 @@ function Login() {
             <label style={{fontSize:12,color:"#666",display:"block",marginBottom:5}}>Mot de passe</label>
             <input type="password" value={password} onChange={e=>setPassword(e.target.value)} placeholder="••••••••" required style={{width:"100%",padding:"10px 12px",border:"1px solid #E0E0DC",borderRadius:8,fontSize:14,outline:"none",boxSizing:"border-box"}}/>
           </div>
-          <button type="submit" disabled={loading} style={{width:"100%",padding:12,background:"#1D9E75",color:"#fff",border:"none",borderRadius:8,fontSize:14,fontWeight:600,cursor:"pointer"}}>
-            {loading?"Connexion...":"Se connecter"}
+          <button type="submit" disabled={loading} style={{width:"100%",padding:12,background:"#1A2E44",color:"#fff",border:"none",borderRadius:8,fontSize:14,fontWeight:600,cursor:"pointer"}}>
+            {loading ? "Connexion..." : "Se connecter"}
           </button>
         </form>
+        <div style={{marginTop:20,textAlign:"center",paddingTop:20,borderTop:"0.5px solid #E8E8E4"}}>
+          <p style={{fontSize:13,color:"#888",marginBottom:10}}>Pas encore de compte ?</p>
+          <button onClick={onShowRegister} style={{width:"100%",padding:12,background:"#E1F5EE",color:"#0F6E56",border:"none",borderRadius:8,fontSize:14,fontWeight:600,cursor:"pointer"}}>
+            Démarrer l'essai gratuit 🚀
+          </button>
+        </div>
       </div>
     </div>
   )
 }
 
+function Register({ onShowLogin }) {
+  const [form, setForm] = useState({ name:"", email:"", password:"", phone:"", address:"" })
+  const [error, setError] = useState('')
+  const [success, setSuccess] = useState(false)
+  const [loading, setLoading] = useState(false)
+
+  const handleRegister = async (e) => {
+    e.preventDefault(); setLoading(true); setError('')
+    if (form.password.length < 6) { setError("Le mot de passe doit faire au moins 6 caractères"); setLoading(false); return }
+
+    // 1. Créer le compte auth
+    const { data: authData, error: authError } = await supabase.auth.signUp({
+      email: form.email,
+      password: form.password,
+    })
+    if (authError) { setError(authError.message); setLoading(false); return }
+
+    // 2. Créer le tenant
+    const slug = form.name.toLowerCase().replace(/\s+/g,"-").replace(/[^a-z0-9-]/g,"") + "-" + Date.now()
+    const trialEnd = new Date(); trialEnd.setMonth(trialEnd.getMonth() + 1)
+    const { data: tenantData, error: tenantError } = await supabase.from("tenants").insert([{
+      name: form.name, email: form.email, phone: form.phone,
+      address: form.address, plan: "trial", slug, is_active: true,
+      trial_ends_at: trialEnd.toISOString(),
+    }]).select().single()
+    if (tenantError) { setError(tenantError.message); setLoading(false); return }
+
+    // 3. Créer le profil
+    const { error: profileError } = await supabase.from("profiles").upsert([{
+      id: authData.user.id,
+      role: "client",
+      tenant_id: tenantData.id,
+    }])
+    if (profileError) { setError(profileError.message); setLoading(false); return }
+
+    setSuccess(true)
+    setLoading(false)
+  }
+
+  if (success) return (
+    <div style={{display:"flex",alignItems:"center",justifyContent:"center",minHeight:"100vh",background:"#F5F5F2",fontFamily:"sans-serif",padding:16}}>
+      <div style={{background:"#fff",borderRadius:16,padding:"40px 36px",width:"100%",maxWidth:360,textAlign:"center",boxShadow:"0 4px 24px rgba(0,0,0,0.08)"}}>
+        <div style={{fontSize:48,marginBottom:16}}>🎉</div>
+        <div style={{fontSize:18,fontWeight:600,color:"#1A2E44",marginBottom:8}}>Compte créé !</div>
+        <div style={{fontSize:13,color:"#888",marginBottom:8}}>Votre essai gratuit de 30 jours démarre maintenant.</div>
+        <div style={{fontSize:12,color:"#aaa",marginBottom:24}}>Vérifiez vos emails pour confirmer votre compte.</div>
+        <button onClick={onShowLogin} style={{width:"100%",padding:12,background:"#1A2E44",color:"#fff",border:"none",borderRadius:8,fontSize:14,fontWeight:600,cursor:"pointer"}}>
+          Se connecter
+        </button>
+      </div>
+    </div>
+  )
+
+  return (
+    <div style={{display:"flex",alignItems:"center",justifyContent:"center",minHeight:"100vh",background:"#F5F5F2",fontFamily:"sans-serif",padding:16}}>
+      <div style={{background:"#fff",borderRadius:16,padding:"40px 36px",width:"100%",maxWidth:360,boxShadow:"0 4px 24px rgba(0,0,0,0.08)"}}>
+        <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:8}}>
+          <div style={{width:38,height:38,background:"#1A2E44",borderRadius:10,display:"flex",alignItems:"center",justifyContent:"center"}}>
+            <Icon name="shield" size={22} color="#2DD4BF"/>
+          </div>
+          <div>
+            <div style={{fontSize:18,fontWeight:600,color:"#1A2E44"}}>SnackSafe</div>
+            <div style={{fontSize:11,color:"#888"}}>Essai gratuit 30 jours</div>
+          </div>
+        </div>
+        <div style={{background:"#E1F5EE",borderRadius:8,padding:"10px 14px",marginBottom:20,fontSize:12,color:"#085041"}}>
+          ✅ Aucune carte bancaire requise · 30 jours gratuits
+        </div>
+        {error && <div style={{background:"#FCEBEB",color:"#A32D2D",padding:"10px 14px",borderRadius:8,marginBottom:16,fontSize:13}}>{error}</div>}
+        <form onSubmit={handleRegister}>
+          {[
+            { key:"name",     label:"Nom du restaurant *", type:"text",     ph:"Ex: Snack El Baraka" },
+            { key:"email",    label:"Email *",             type:"email",    ph:"votre@email.com" },
+            { key:"password", label:"Mot de passe *",      type:"password", ph:"6 caractères minimum" },
+            { key:"phone",    label:"Téléphone",           type:"tel",      ph:"+33 6 XX XX XX XX" },
+            { key:"address",  label:"Adresse",             type:"text",     ph:"123 rue de la Paix" },
+          ].map(f => (
+            <div key={f.key} style={{marginBottom:12}}>
+              <label style={{fontSize:12,color:"#666",display:"block",marginBottom:4}}>{f.label}</label>
+              <input type={f.type} value={form[f.key]} onChange={e=>setForm(p=>({...p,[f.key]:e.target.value}))}
+                placeholder={f.ph} required={f.key==="name"||f.key==="email"||f.key==="password"}
+                style={{width:"100%",padding:"10px 12px",border:"1px solid #E0E0DC",borderRadius:8,fontSize:13,outline:"none",boxSizing:"border-box"}}/>
+            </div>
+          ))}
+          <button type="submit" disabled={loading} style={{width:"100%",padding:12,background:"#1A2E44",color:"#fff",border:"none",borderRadius:8,fontSize:14,fontWeight:600,cursor:"pointer",marginTop:8}}>
+            {loading ? "Création..." : "Démarrer l'essai gratuit 🚀"}
+          </button>
+        </form>
+        <div style={{marginTop:16,textAlign:"center"}}>
+          <button onClick={onShowLogin} style={{fontSize:13,color:"#888",background:"none",border:"none",cursor:"pointer"}}>
+            Déjà un compte ? Se connecter
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
 export default function App() {
   const [session, setSession] = useState(null)
   const [profile, setProfile] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [showRegister, setShowRegister] = useState(false)
+  const [trialExpired, setTrialExpired] = useState(false)
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -1671,13 +1778,20 @@ export default function App() {
     supabase.auth.onAuthStateChange((_, session) => {
       setSession(session)
       if (session) loadProfile(session.user.id)
-      else { setProfile(null); setLoading(false) }
+      else { setProfile(null); setLoading(false); setTrialExpired(false) }
     })
   }, [])
 
   const loadProfile = async (userId) => {
-    const { data } = await supabase.from("profiles").select("*").eq("id", userId).single()
-    setProfile(data)
+    const { data: profile } = await supabase.from("profiles").select("*").eq("id", userId).single()
+    if (profile?.tenant_id) {
+      const { data: tenant } = await supabase.from("tenants").select("*").eq("id", profile.tenant_id).single()
+      if (tenant?.plan === "trial" && tenant?.trial_ends_at) {
+        const expired = new Date(tenant.trial_ends_at) < new Date()
+        setTrialExpired(expired)
+      }
+    }
+    setProfile(profile)
     setLoading(false)
   }
 
@@ -1686,13 +1800,35 @@ export default function App() {
   if (loading) return (
     <div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100vh",fontFamily:"sans-serif"}}>
       <div style={{textAlign:"center"}}>
-        <div style={{fontSize:32,marginBottom:12}}>🛡️</div>
+        <div style={{width:48,height:48,background:"#1A2E44",borderRadius:14,display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 12px"}}>
+          <Icon name="shield" size={28} color="#2DD4BF"/>
+        </div>
         <div style={{fontSize:14,color:"#888"}}>Chargement SnackSafe...</div>
       </div>
     </div>
   )
 
-  if (!session) return <Login />
+  if (!session) {
+    if (showRegister) return <Register onShowLogin={() => setShowRegister(false)} />
+    return <Login onShowRegister={() => setShowRegister(true)} />
+  }
+
+  if (trialExpired) return (
+    <div style={{display:"flex",alignItems:"center",justifyContent:"center",minHeight:"100vh",background:"#F5F5F2",fontFamily:"sans-serif",padding:16}}>
+      <div style={{background:"#fff",borderRadius:16,padding:"40px 36px",width:"100%",maxWidth:360,textAlign:"center",boxShadow:"0 4px 24px rgba(0,0,0,0.08)"}}>
+        <div style={{fontSize:48,marginBottom:16}}>⏰</div>
+        <div style={{fontSize:18,fontWeight:600,color:"#1A2E44",marginBottom:8}}>Essai gratuit terminé</div>
+        <div style={{fontSize:13,color:"#888",marginBottom:24}}>Votre période d'essai de 30 jours est expirée. Contactez-nous pour continuer à utiliser SnackSafe.</div>
+        <a href="mailto:nemri.jamel@gmail.com?subject=Abonnement SnackSafe" style={{display:"block",width:"100%",padding:12,background:"#1A2E44",color:"#fff",borderRadius:8,fontSize:14,fontWeight:600,textDecoration:"none",boxSizing:"border-box"}}>
+          Nous contacter 📧
+        </a>
+        <button onClick={handleLogout} style={{marginTop:12,width:"100%",padding:12,background:"#F5F5F2",color:"#666",border:"none",borderRadius:8,fontSize:13,cursor:"pointer"}}>
+          Déconnexion
+        </button>
+      </div>
+    </div>
+  )
+
   if (profile?.role === "super_admin") return <SuperAdmin session={session} onLogout={handleLogout} />
   return <ClientApp session={session} profile={profile} onLogout={handleLogout} />
 }
