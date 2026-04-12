@@ -1682,6 +1682,8 @@ function Register({ onShowLogin }) {
     })
     if (authError) { setError(authError.message); setLoading(false); return }
 
+    // Attendre que l'user soit bien enregistré
+await new Promise(resolve => setTimeout(resolve, 1500))
     // 2. Créer le tenant
     const slug = form.name.toLowerCase().replace(/\s+/g,"-").replace(/[^a-z0-9-]/g,"") + "-" + Date.now()
     const trialEnd = new Date(); trialEnd.setMonth(trialEnd.getMonth() + 1)
