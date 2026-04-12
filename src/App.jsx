@@ -594,7 +594,7 @@ const [pinInput, setPinInput] = useState("")
   const [tenants, setTenants] = useState([])
   const [loading, setLoading] = useState(true)
   const [showNewClient, setShowNewClient] = useState(false)
-  const [newClient, setNewClient] = useState({ name:"", email:"", phone:"", address:"", plan:"trial" })
+  const [newClient, setNewClient] = useState({ name:"", email:"", password:"", phone:"", address:"", plan:"trial" })
   const [saving, setSaving] = useState(false)
   const [msg, setMsg] = useState("")
 
@@ -611,7 +611,11 @@ const [pinInput, setPinInput] = useState("")
     if (!newClient.name || !newClient.email) { setMsg("Nom et email obligatoires"); return }
     setSaving(true)
     const slug = newClient.name.toLowerCase().replace(/\s+/g,"-").replace(/[^a-z0-9-]/g,"") + "-" + Date.now()
-    const { error } = await supabase.from("tenants").insert([{ name:newClient.name, email:newClient.email, phone:newClient.phone, address:newClient.address, plan:newClient.plan, slug, is_active:true }])
+    const { data: authData, error: authError } = await supabase.auth.admin.createUser({ email: newClient.email, password: newClient.password, email_confirm: true })
+if (authError) { setMsg("Erreur auth : " + authError.message); setSaving(false); return }
+const trialEnd = new Date(); trialEnd.setMonth(trialEnd.getMonth() + 1)
+const { data: tenantData, error } = await supabase.from("tenants").insert([{ name:newClient.name, email:newClient.email, phone:newClient.phone, address:newClient.address, plan:newClient.plan, slug, is_active:true, trial_ends_at: trialEnd.toISOString() }]).select().single()
+if (!error) { await supabase.rpc('create_profile_on_signup', { user_id: authData.user.id, tenant_id: tenantData.id, user_role: 'client' }) }
     if (error) setMsg("Erreur : " + error.message)
     else { setMsg("✅ Client créé !"); setNewClient({name:"",email:"",phone:"",address:"",plan:"trial"}); setShowNewClient(false); loadTenants() }
     setSaving(false)
@@ -689,7 +693,7 @@ const [pinInput, setPinInput] = useState("")
             {showNewClient && <div style={{background:"#fff",border:"1px solid #1D9E75",borderRadius:12,padding:20,marginBottom:20}}>
               <div style={{fontSize:14,fontWeight:600,color:"#222",marginBottom:16}}>Nouveau client</div>
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12}}>
-                {[{key:"name",label:"Nom *",ph:"Snack El Baraka"},{key:"email",label:"Email *",ph:"contact@restaurant.com"},{key:"phone",label:"Téléphone",ph:"+33 6 XX XX XX XX"},{key:"address",label:"Adresse",ph:"123 rue de la Paix"}].map(f =>
+                {[{key:"name",label:"Nom *",ph:"Snack El Baraka"},{key:"email",label:"Email *",ph:"contact@restaurant.com"},{key:"password",label:"Mot de passe *",ph:"6 caractères minimum"},{key:"phone",label:"Téléphone",ph:"+33 6 XX XX XX XX"},{key:"address",label:"Adresse",ph:"123 rue de la Paix"}].map(f =>
                   <div key={f.key}>
                     <label style={{fontSize:11,color:"#666",display:"block",marginBottom:4}}>{f.label}</label>
                     <input value={newClient[f.key]} onChange={e=>setNewClient(p=>({...p,[f.key]:e.target.value}))} placeholder={f.ph} style={{width:"100%",padding:"8px 12px",border:"1px solid #E0E0DC",borderRadius:8,fontSize:13,outline:"none",boxSizing:"border-box"}}/>
