@@ -1692,12 +1692,12 @@ function Register({ onShowLogin }) {
     }]).select().single()
     if (tenantError) { setError(tenantError.message); setLoading(false); return }
 
-    // 3. Créer le profil
-    const { error: profileError } = await supabase.from("profiles").upsert([{
-      id: authData.user.id,
-      role: "client",
+    // 3. Créer le profil via la fonction sécurisée
+    const { error: profileError } = await supabase.rpc('create_profile_on_signup', {
+      user_id: authData.user.id,
       tenant_id: tenantData.id,
-    }])
+      user_role: 'client'
+    })
     if (profileError) { setError(profileError.message); setLoading(false); return }
 
     setSuccess(true)
