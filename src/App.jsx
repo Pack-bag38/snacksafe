@@ -625,7 +625,12 @@ if (!error) { await supabase.rpc('create_profile_on_signup', { user_id: authData
     await supabase.from("tenants").update({ is_active: !current }).eq("id", id)
     loadTenants()
   }
-
+const supprimerClient = async (id) => {
+  if (!window.confirm("Supprimer ce client définitivement ?")) return
+  await supabase.from("tenants").delete().eq("id", id)
+  loadTenants()
+}
+  
   const planColor = (plan) => ({ trial:"gray", starter:"blue", pro:"green", multi:"purple", enterprise:"purple" }[plan] || "gray")
   const NAV = [{id:"dashboard",label:"📊 Dashboard"},{id:"clients",label:"🏪 Clients"},{id:"stats",label:"📈 Stats"}]
 
@@ -723,7 +728,10 @@ if (!error) { await supabase.rpc('create_profile_on_signup', { user_id: authData
                   <span style={{fontSize:12,color:t.is_active?"#0F6E56":"#A32D2D"}}>{t.is_active?"Actif":"Inactif"}</span>
                 </div>
                 <div style={{fontSize:12,color:"#888"}}>{new Date(t.created_at).toLocaleDateString("fr-FR")}</div>
-                <button onClick={()=>toggleActive(t.id,t.is_active)} style={{fontSize:11,padding:"4px 10px",background:t.is_active?"#FCEBEB":"#E1F5EE",color:t.is_active?"#A32D2D":"#0F6E56",border:"none",borderRadius:6,cursor:"pointer",fontFamily:"inherit"}}>{t.is_active?"Désactiver":"Activer"}</button>
+                <div style={{display:"flex",gap:6}}>
+  <button onClick={()=>toggleActive(t.id,t.is_active)} style={{fontSize:11,padding:"4px 10px",background:t.is_active?"#FCEBEB":"#E1F5EE",color:t.is_active?"#A32D2D":"#0F6E56",border:"none",borderRadius:6,cursor:"pointer",fontFamily:"inherit"}}>{t.is_active?"Désactiver":"Activer"}</button>
+  <button onClick={()=>supprimerClient(t.id)} style={{fontSize:11,padding:"4px 10px",background:"#FCEBEB",color:"#A32D2D",border:"none",borderRadius:6,cursor:"pointer",fontFamily:"inherit"}}>Supprimer</button>
+</div> style={{fontSize:11,padding:"4px 10px",background:t.is_active?"#FCEBEB":"#E1F5EE",color:t.is_active?"#A32D2D":"#0F6E56",border:"none",borderRadius:6,cursor:"pointer",fontFamily:"inherit"}}>{t.is_active?"Désactiver":"Activer"}</button>
               </div>)}
             </div>
           </div>
