@@ -717,10 +717,10 @@ const supprimerClient = async (id) => {
               </div>
             </div>}
             <div style={{background:"#fff",border:"0.5px solid #E8E8E4",borderRadius:12,overflow:"hidden"}}>
-              <div style={{display:"grid",gridTemplateColumns:"2fr 1fr 1fr 1fr 100px",padding:"12px 20px",background:"#F5F5F2",fontSize:11,fontWeight:600,color:"#888",textTransform:"uppercase"}}>
+              <div style={{display:"grid",gridTemplateColumns:"2fr 1fr 1fr 1fr 160px",padding:"12px 20px",background:"#F5F5F2",fontSize:11,fontWeight:600,color:"#888",textTransform:"uppercase"}}>
                 <div>Restaurant</div><div>Plan</div><div>Statut</div><div>Créé le</div><div>Action</div>
               </div>
-              {tenants.map((t,i) => <div key={t.id} style={{display:"grid",gridTemplateColumns:"2fr 1fr 1fr 1fr 100px",padding:"14px 20px",borderTop:i>0?"0.5px solid #F0F0EC":"none",alignItems:"center"}}>
+              {tenants.map((t,i) => <div key={t.id} style={{display:"grid",gridTemplateColumns:"2fr 1fr 1fr 1fr 160px",padding:"14px 20px",borderTop:i>0?"0.5px solid #F0F0EC":"none",alignItems:"center"}}>
                 <div><div style={{fontSize:13,fontWeight:600,color:"#222"}}>{t.name}</div><div style={{fontSize:11,color:"#888"}}>{t.email}</div></div>
                 <div><Tag color={planColor(t.plan)}>{t.plan}</Tag></div>
                 <div style={{display:"flex",alignItems:"center",gap:6}}>
