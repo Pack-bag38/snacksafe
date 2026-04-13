@@ -731,10 +731,10 @@ if (!error) { await supabase.rpc('create_profile_on_signup', { user_id: authData
                <div style={{display:"flex",gap:6}}>
                 <button onClick={()=>toggleActive(t.id,t.is_active)} style={{fontSize:11,padding:"4px 10px",background:t.is_active?"#FCEBEB":"#E1F5EE",color:t.is_active?"#A32D2D":"#0F6E56",border:"none",borderRadius:6,cursor:"pointer",fontFamily:"inherit"}}>{t.is_active?"Désactiver":"Activer"}</button>
                 <button onClick={()=>supprimerClient(t.id)} style={{fontSize:11,padding:"4px 10px",background:"#FCEBEB",color:"#A32D2D",border:"none",borderRadius:6,cursor:"pointer",fontFamily:"inherit"}}>Supprimer</button>
-              </div>
-                
-            </div>
+             </div>
           </div>
+        })}
+      </div>
         )}
         {page === "stats" && (
           <div>
