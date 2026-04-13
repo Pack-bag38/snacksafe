@@ -733,7 +733,7 @@ if (!error) { await supabase.rpc('create_profile_on_signup', { user_id: authData
                 <button onClick={()=>supprimerClient(t.id)} style={{fontSize:11,padding:"4px 10px",background:"#FCEBEB",color:"#A32D2D",border:"none",borderRadius:6,cursor:"pointer",fontFamily:"inherit"}}>Supprimer</button>
              </div>
           </div>
-         })}
+        ))}
       </div>
     }}
         {page === "stats" && (
