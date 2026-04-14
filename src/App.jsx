@@ -794,10 +794,8 @@ function ClientApp({ session, profile, onLogout }) {
       </div>
 
       {/* CONTENT */}
-      <div style={{flex:1,padding:"16px 14px 110px",overflow:"auto"}}>
-{!onboardingDone ? <PageOnboarding setPage={setPage} setOnboardingDone={setOnboardingDone}/> : <>
-{onboardingDone && <>
-      <div style={{flex:1,padding:"16px 14px 110px",overflow:"auto"}}>{/* CONTENT */}
+      {!onboardingDone ? <PageOnboarding setPage={setPage} setOnboardingDone={setOnboardingDone}/> :
+        <div style={{flex:1,padding:"16px 14px 110px",overflow:"auto"}}>
         {page==="dashboard"       && <PageDashboard setPage={setPage} profile={profile}/>}
         {page==="parametres"      && <PageParametres profile={profile}/>}
         {page==="equipements"     && <PageEquipements profile={profile}/>}
