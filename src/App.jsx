@@ -761,6 +761,7 @@ function ClientApp({ session, profile, onLogout }) {
   const [page, setPage] = useState("dashboard")
   const [pinOk, setPinOk] = useState(false)
   const [pinInput, setPinInput] = useState("")
+  const [onboardingDone, setOnboardingDone] = useState(!!profile?.onboarding_done)
 
   const NAV_ROW1 = [
     { id:"dashboard",   icon:"home",     label:"Accueil"    },
@@ -794,6 +795,9 @@ function ClientApp({ session, profile, onLogout }) {
 
       {/* CONTENT */}
       <div style={{flex:1,padding:"16px 14px 110px",overflow:"auto"}}>
+{!onboardingDone ? <PageOnboarding setPage={setPage} setOnboardingDone={setOnboardingDone}/> : <>
+{onboardingDone && <>
+      <div style={{flex:1,padding:"16px 14px 110px",overflow:"auto"}}>{/* CONTENT */}
         {page==="dashboard"       && <PageDashboard setPage={setPage} profile={profile}/>}
         {page==="parametres"      && <PageParametres profile={profile}/>}
         {page==="equipements"     && <PageEquipements profile={profile}/>}
@@ -819,7 +823,8 @@ function ClientApp({ session, profile, onLogout }) {
         {page==="maintien"        && <PageMaintienChaud profile={profile}/>}
         {page==="refroidissement" && <PageRefroidissement profile={profile}/>}
         {page==="actions"         && <PageActionsCorrectives profile={profile}/>}
-      </div>
+      </>}
+        </div>
           {page !== "dashboard" && (
             <div style={{position:"fixed",bottom:0,left:"50%",transform:"translateX(-50%)",width:"100%",maxWidth:460,background:"#1A2E44",paddingBottom:"env(safe-area-inset-bottom)"}}>
               <button onClick={()=>setPage("dashboard")} style={{width:"100%",padding:"14px",border:"none",background:"transparent",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:8,fontFamily:"inherit"}}>
@@ -831,7 +836,75 @@ function ClientApp({ session, profile, onLogout }) {
         </div>
       )
     }
+function PageOnboarding({ setPage, setOnboardingDone }) {
+  const steps = [
+    { id:"equipements", label:"Ajouter vos équipements", sub:"Frigos, congélateurs, bains-marie...", bg:"#E1F5EE", iconColor:"#0F6E56", icon:"temp", page:"equipements" },
+    { id:"checklist",   label:"Faire votre 1ère checklist", sub:"Ouverture, service, fermeture", bg:"#DBEAFE", iconColor:"#185FA5", icon:"check", page:"checklist" },
+    { id:"temperatures",label:"Saisir vos températures", sub:"Premier relevé du jour", bg:"#FAEEDA", iconColor:"#BA7517", icon:"temp", page:"equipements" },
+  ]
+  const [done, setDone] = useState([])
 
+  const handleStep = (page) => {
+    setDone(p => [...new Set([...p, page])])
+    setPage(page)
+  }
+
+  return (
+    <div style={{minHeight:"100vh",background:"#F7F8FA",fontFamily:"'DM Sans','Trebuchet MS',sans-serif"}}>
+      <div style={{background:"#1A2E44",padding:"40px 24px 32px",textAlign:"center"}}>
+        <div style={{width:64,height:64,background:"#2DD4BF",borderRadius:18,display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 16px"}}>
+          <Icon name="shield" size={36} color="#1A2E44"/>
+        </div>
+        <div style={{fontSize:22,fontWeight:700,color:"#fff",marginBottom:8}}>Bienvenue sur SnackSafe ! 🎉</div>
+        <div style={{fontSize:13,color:"#94A3B8",lineHeight:1.6}}>Votre assistant HACCP est prêt.<br/>Suivez ces 3 étapes pour démarrer.</div>
+      </div>
+
+      <div style={{padding:"20px 24px 0"}}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:6}}>
+          <span style={{fontSize:12,color:"#94A3B8"}}>Progression</span>
+          <span style={{fontSize:12,fontWeight:600,color:"#2DD4BF"}}>{done.length} / 3 étapes</span>
+        </div>
+        <div style={{height:6,background:"#E2E8F0",borderRadius:3}}>
+          <div style={{height:"100%",background:"#2DD4BF",borderRadius:3,width:`${(done.length/3)*100}%`,transition:"width 0.3s"}}/>
+        </div>
+      </div>
+
+      <div style={{padding:"16px 24px",display:"flex",flexDirection:"column",gap:12}}>
+        {steps.map((s,i) => {
+          const isDone = done.includes(s.page)
+          const isActive = i === 0 || done.includes(steps[i-1].page)
+          return (
+            <button key={s.id} onClick={()=>isActive && handleStep(s.page)}
+              style={{background:"#fff",borderRadius:16,padding:16,border:isActive&&!isDone?"2px solid #2DD4BF":"0.5px solid #E2E8F0",display:"flex",alignItems:"center",gap:14,opacity:isActive?1:0.5,cursor:isActive?"pointer":"default",fontFamily:"inherit",textAlign:"left",width:"100%"}}>
+              <div style={{width:48,height:48,background:s.bg,borderRadius:14,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                <Icon name={s.icon} size={24} color={s.iconColor}/>
+              </div>
+              <div style={{flex:1}}>
+                <div style={{fontSize:14,fontWeight:600,color:"#1A2E44",marginBottom:3}}>{s.label}</div>
+                <div style={{fontSize:12,color:"#94A3B8"}}>{s.sub}</div>
+              </div>
+              <div style={{width:28,height:28,background:isDone?"#2DD4BF":"#E2E8F0",borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                {isDone
+                  ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/></svg>
+                  : <span style={{fontSize:13,color:"#94A3B8",fontWeight:700}}>{i+1}</span>
+                }
+              </div>
+            </button>
+          )
+        })}
+      </div>
+
+      <div style={{padding:"8px 24px 24px"}}>
+        <button onClick={()=>setOnboardingDone(true)} style={{width:"100%",padding:16,background:"#2DD4BF",border:"none",borderRadius:14,fontSize:14,fontWeight:700,color:"#1A2E44",cursor:"pointer",fontFamily:"inherit"}}>
+          Accéder à mon tableau de bord
+        </button>
+        <button onClick={()=>setOnboardingDone(true)} style={{width:"100%",padding:12,background:"transparent",border:"none",fontSize:12,color:"#94A3B8",cursor:"pointer",fontFamily:"inherit",marginTop:8}}>
+          Passer l'introduction
+        </button>
+      </div>
+    </div>
+  )
+}
 function PageDashboard({ setPage, profile }) {
   const [todayAlerts, setTodayAlerts] = useState([])
   const tenantId = profile?.tenant_id
