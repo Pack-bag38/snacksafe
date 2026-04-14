@@ -764,10 +764,6 @@ function ClientApp({ session, profile, onLogout }) {
 
   const NAV_ROW1 = [
     { id:"dashboard",   icon:"home",     label:"Accueil"    },
-    { id:"equipements", icon:"temp",     label:"Temp."      },
-    { id:"checklist",   icon:"check",    label:"Checklist"  },
-    { id:"rapports",    icon:"report",   label:"Rapports"   },
-    { id:"parametres",  icon:"settings", label:"Paramètres" },
   ]
   
   return (
@@ -826,13 +822,14 @@ function ClientApp({ session, profile, onLogout }) {
       </div>
 
       {/* BOTTOM NAV */}
-      <div style={{position:"fixed",bottom:0,left:"50%",transform:"translateX(-50%)",width:"100%",maxWidth:460,background:"#fff",borderTop:"0.5px solid #E8E8E4",paddingBottom:"env(safe-area-inset-bottom)"}}>
-        <div style={{display:"flex",padding:"6px 4px 2px"}}>
-          {NAV_ROW1.map(n => <NavBtn key={n.id} icon={n.icon} label={n.label} active={page===n.id} onClick={()=>setPage(n.id)}/>)}
-        </div>
-        
-      </div>
-    </div>
+      {page !== "dashboard" && (
+  <div style={{position:"fixed",bottom:0,left:"50%",transform:"translateX(-50%)",width:"100%",maxWidth:460,background:"#1A2E44",paddingBottom:"env(safe-area-inset-bottom)"}}>
+    <button onClick={()=>setPage("dashboard")} style={{width:"100%",padding:"14px",border:"none",background:"transparent",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:8,fontFamily:"inherit"}}>
+      <Icon name="home" size={18} color="#2DD4BF"/>
+      <span style={{fontSize:13,fontWeight:600,color:"#2DD4BF"}}>Accueil</span>
+    </button>
+  </div>
+)}
   )
 }
 
