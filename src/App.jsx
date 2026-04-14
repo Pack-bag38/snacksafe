@@ -829,7 +829,7 @@ function ClientApp({ session, profile, onLogout }) {
       <span style={{fontSize:13,fontWeight:600,color:"#2DD4BF"}}>Accueil</span>
     </button>
   </div>
-)}
+}
   )
 }
 
