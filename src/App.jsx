@@ -266,7 +266,7 @@ function PageEquipements({ profile }) {
               <div style={{fontSize:13,color:"#888",marginBottom:4}}>Aucun équipement configuré</div>
               <div style={{fontSize:11,color:"#aaa"}}>Ajoutez vos frigos, congélateurs, bains-marie...</div>
             </div> :
-            <div style={{background:"#fff",border:"0.5px solid #E8E8E4",borderRadius:12,overflow:"hidden"}}>
+            <div style={{background:"#fff",border:"0.5px solid #E8E8E4",borderRadius:12,overflow:"visible"}}>
               {equipements.map((eq,i) => {
                 const lastLog = todayLogs.find(l => l.zone === eq.nom)
                 const st = lastLog ? (lastLog.is_compliant ? "ok" : "bad") : null
