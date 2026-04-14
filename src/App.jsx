@@ -857,8 +857,8 @@ function PageDashboard({ setPage, profile }) {
   ]
 
   return (
-    <div>
-      {/* Alerte */}
+    <div style={{display:"flex",flexDirection:"column",minHeight:"calc(100vh - 120px)"}}>
+          {/* Alerte */}
       {todayAlerts.length > 0 && (
         <div style={{marginBottom:14}}>
           {todayAlerts.map((a,i) => (
@@ -891,7 +891,7 @@ function PageDashboard({ setPage, profile }) {
       <p style={{margin:"0 0 10px",fontSize:13,fontWeight:600,color:"#1A2E44"}}>Modules</p>
 
       {/* Modules grid */}
-      <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:12}}>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gridTemplateRows:"repeat(3,1fr)",gap:12,flex:1}}>
         {MODULES.map((m,i) => (
           <button key={i} onClick={()=>setPage(m.id)} style={{background:m.bg,borderRadius:18,padding:"22px 10px",border:"none",textAlign:"center",cursor:"pointer",fontFamily:"inherit"}}>
             <div style={{width:44,height:44,background:"rgba(255,255,255,0.25)",borderRadius:14,display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 10px"}}>
