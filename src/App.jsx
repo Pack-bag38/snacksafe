@@ -823,7 +823,7 @@ function ClientApp({ session, profile, onLogout }) {
         {page==="maintien"        && <PageMaintienChaud profile={profile}/>}
         {page==="refroidissement" && <PageRefroidissement profile={profile}/>}
         {page==="actions"         && <PageActionsCorrectives profile={profile}/>}
-      </>}
+      </>
         </div>
           {page !== "dashboard" && (
             <div style={{position:"fixed",bottom:0,left:"50%",transform:"translateX(-50%)",width:"100%",maxWidth:460,background:"#1A2E44",paddingBottom:"env(safe-area-inset-bottom)"}}>
