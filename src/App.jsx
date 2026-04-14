@@ -821,7 +821,8 @@ function ClientApp({ session, profile, onLogout }) {
         {page==="maintien"        && <PageMaintienChaud profile={profile}/>}
         {page==="refroidissement" && <PageRefroidissement profile={profile}/>}
         {page==="actions"         && <PageActionsCorrectives profile={profile}/>}
-      </>}
+      </div>
+    </>}
         </div>
        
           {page !== "dashboard" && (
