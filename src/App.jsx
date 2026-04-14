@@ -769,13 +769,7 @@ function ClientApp({ session, profile, onLogout }) {
     { id:"rapports",    icon:"report",   label:"Rapports"   },
     { id:"parametres",  icon:"settings", label:"Paramètres" },
   ]
-  const NAV_ROW2 = [
-    { id:"reception",       icon:"box",     label:"Réception" },
-    { id:"maintien",        icon:"fire",    label:"Chaud"     },
-    { id:"refroidissement", icon:"snow",    label:"Froid"     },
-    { id:"actions",         icon:"warning", label:"Actions",  accent:true },
-  ]
-
+  
   return (
     <div style={{fontFamily:"'DM Sans','Trebuchet MS',sans-serif",maxWidth:460,margin:"0 auto",background:"#F7F8FA",minHeight:"100vh",display:"flex",flexDirection:"column"}}>
 
@@ -836,10 +830,7 @@ function ClientApp({ session, profile, onLogout }) {
         <div style={{display:"flex",padding:"6px 4px 2px"}}>
           {NAV_ROW1.map(n => <NavBtn key={n.id} icon={n.icon} label={n.label} active={page===n.id} onClick={()=>setPage(n.id)}/>)}
         </div>
-        <div style={{height:"0.5px",background:"#F0F0EC",margin:"0 12px"}}/>
-        <div style={{display:"flex",padding:"2px 4px 6px"}}>
-          {NAV_ROW2.map(n => <NavBtn key={n.id} icon={n.icon} label={n.label} active={page===n.id} onClick={()=>setPage(n.id)} accent={n.accent}/>)}
-        </div>
+        
       </div>
     </div>
   )
