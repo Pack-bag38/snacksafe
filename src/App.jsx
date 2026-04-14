@@ -857,62 +857,60 @@ function PageDashboard({ setPage, profile }) {
     }
   }, [tenantId])
 
+  const MODULES = [
+    { id:"equipements", label:"Températures", bg:"#FF6B6B", icon:"temp" },
+    { id:"checklist",   label:"Checklist",    bg:"#4ECDC4", icon:"check" },
+    { id:"reception",   label:"Réception",    bg:"#A78BFA", icon:"box" },
+    { id:"maintien",    label:"Chaud",        bg:"#FF9F43", icon:"fire" },
+    { id:"refroidissement", label:"Froid",    bg:"#54A0FF", icon:"snow" },
+    { id:"actions",     label:"Actions",      bg:"#F9CA24", icon:"warning", textColor:"#7D5A00" },
+    { id:"rapports",    label:"Rapports",     bg:"#6AB04C", icon:"report" },
+    { id:"reglementation", label:"Règlement.", bg:"#EE5A24", icon:"clip" },
+    { id:"parametres",  label:"Paramètres",   bg:"#B8E994", icon:"settings", textColor:"#2C6B2F" },
+  ]
+
   return (
     <div>
+      {/* Alerte */}
       {todayAlerts.length > 0 && (
         <div style={{marginBottom:14}}>
           {todayAlerts.map((a,i) => (
-            <div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"11px 14px",background:"#FEF2F2",border:"1px solid #FECACA",borderLeft:"4px solid #EF4444",borderRadius:12,marginBottom:6}}>
-              <div style={{width:30,height:30,background:"#FEE2E2",borderRadius:8,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-                <Icon name="alert" size={15} color="#EF4444"/>
-              </div>
+            <div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"11px 14px",background:"#FEF2F2",borderLeft:"4px solid #EF4444",borderRadius:12,marginBottom:6}}>
+              <Icon name="alert" size={15} color="#EF4444"/>
               <div>
                 <div style={{fontSize:13,fontWeight:500,color:"#991B1B"}}>{a.zone} : {a.value}°C</div>
-                <div style={{fontSize:11,color:"#B91C1C"}}>Température non conforme · Vérifier maintenant</div>
+                <div style={{fontSize:11,color:"#B91C1C"}}>Non conforme · Action requise</div>
               </div>
             </div>
           ))}
         </div>
       )}
 
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:14}}>
+      {/* KPI row */}
+      <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,marginBottom:16}}>
         {[
-          { label:"Alertes",    val:todayAlerts.length, sub:"aujourd'hui",     iconName:"warning", iconBg:"#FEE2E2", iconColor:"#EF4444", valColor:todayAlerts.length>0?"#EF4444":"#10B981" },
-          { label:"CCP",        val:`${HACCP_POINTS.filter(h=>h.status==="ok").length}/${HACCP_POINTS.length}`, sub:"points conformes", iconName:"check", iconBg:"#D1FAE5", iconColor:"#10B981", valColor:"#1A2E44" },
-          { label:"Inspection", val:"OK",   sub:"il y a 12 jours", iconName:"clip",  iconBg:"#DBEAFE", iconColor:"#3B82F6", valColor:"#10B981" },
-          { label:"Formation",  val:"100%", sub:"tous formés",     iconName:"check", iconBg:"#D1FAE5", iconColor:"#10B981", valColor:"#10B981" },
+          { label:"Alertes", val:todayAlerts.length, color:todayAlerts.length>0?"#EF4444":"#10B981" },
+          { label:"CCP ok",  val:`${HACCP_POINTS.filter(h=>h.status==="ok").length}/${HACCP_POINTS.length}`, color:"#1A2E44" },
+          { label:"Formation", val:"100%", color:"#10B981" },
         ].map((k,i) => (
-          <div key={i} style={{background:"#fff",borderRadius:14,padding:"13px 14px",border:"0.5px solid #E2E8F0"}}>
-            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
-              <span style={{fontSize:10,color:"#94A3B8",textTransform:"uppercase",letterSpacing:"0.5px"}}>{k.label}</span>
-              <div style={{width:24,height:24,background:k.iconBg,borderRadius:6,display:"flex",alignItems:"center",justifyContent:"center"}}>
-                <Icon name={k.iconName} size={12} color={k.iconColor}/>
-              </div>
-            </div>
-            <div style={{fontSize:24,fontWeight:500,color:k.valColor,lineHeight:1}}>{k.val}</div>
-            <div style={{fontSize:10,color:"#94A3B8",marginTop:3}}>{k.sub}</div>
+          <div key={i} style={{background:"#fff",borderRadius:12,padding:"12px 8px",border:"0.5px solid #E2E8F0",textAlign:"center"}}>
+            <div style={{fontSize:20,fontWeight:600,color:k.color,lineHeight:1}}>{k.val}</div>
+            <div style={{fontSize:10,color:"#94A3B8",marginTop:3}}>{k.label}</div>
           </div>
         ))}
       </div>
 
-      <p style={{margin:"0 0 9px",fontSize:11,color:"#94A3B8",textTransform:"uppercase",letterSpacing:"0.5px"}}>Actions rapides</p>
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
-        {[
-          { label:"Températures",   sub:"Saisir",          page:"equipements",    iconName:"temp",    iconColor:"#2DD4BF", iconBg:"rgba(45,212,191,0.2)", dark:true  },
-          { label:"Checklist",      sub:"Journalière",     page:"checklist",      iconName:"check",   iconColor:"#10B981", iconBg:"#D1FAE5",              dark:false },
-          { label:"Réglementation", sub:"Normes & guides", page:"reglementation", iconName:"clip",    iconColor:"#3B82F6", iconBg:"#DBEAFE",              dark:false },
-          { label:"Rapports",       sub:"Export PDF",      page:"rapports",       iconName:"report",  iconColor:"#F59E0B", iconBg:"#FEF3C7",              dark:false },
-        ].map((q,i) => (
-          <button key={i} onClick={()=>setPage(q.page)} style={{
-            background: q.dark ? "#1A2E44" : "#fff",
-            border: q.dark ? "none" : "0.5px solid #E2E8F0",
-            borderRadius:14, padding:"14px", textAlign:"left", cursor:"pointer", fontFamily:"inherit",
-          }}>
-            <div style={{width:32,height:32,background:q.iconBg,borderRadius:8,display:"flex",alignItems:"center",justifyContent:"center",marginBottom:10}}>
-              <Icon name={q.iconName} size={16} color={q.iconColor}/>
+      {/* Modules title */}
+      <p style={{margin:"0 0 10px",fontSize:13,fontWeight:600,color:"#1A2E44"}}>Modules</p>
+
+      {/* Modules grid */}
+      <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10}}>
+        {MODULES.map((m,i) => (
+          <button key={i} onClick={()=>setPage(m.id)} style={{background:m.bg,borderRadius:18,padding:"16px 10px",border:"none",textAlign:"center",cursor:"pointer",fontFamily:"inherit"}}>
+            <div style={{width:44,height:44,background:"rgba(255,255,255,0.25)",borderRadius:14,display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 10px"}}>
+              <Icon name={m.icon} size={22} color={m.textColor || "#fff"}/>
             </div>
-            <div style={{fontSize:12,fontWeight:500,color:q.dark?"#fff":"#1A2E44"}}>{q.label}</div>
-            <div style={{fontSize:10,color:q.dark?"#64748B":"#94A3B8",marginTop:2}}>{q.sub}</div>
+            <div style={{fontSize:11,fontWeight:600,color:m.textColor || "#fff"}}>{m.label}</div>
           </button>
         ))}
       </div>
