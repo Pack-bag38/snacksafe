@@ -1688,6 +1688,7 @@ function Login({ onShowRegister }) {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [resetSent, setResetSent] = useState(false)
 
   const handleLogin = async (e) => {
     e.preventDefault(); setLoading(true); setError('')
@@ -1695,6 +1696,14 @@ function Login({ onShowRegister }) {
     if (error) setError(error.message)
     setLoading(false)
   }
+  const handleReset = async () => {
+  if (!email) return alert("Entre ton email d'abord")
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: 'https://snacksafe.packbag.fr'
+  })
+  if (error) alert("Erreur : " + error.message)
+  else setResetSent(true)
+}
 
   return (
     <div style={{display:"flex",alignItems:"center",justifyContent:"center",minHeight:"100vh",background:"#F5F5F2",fontFamily:"sans-serif",padding:16}}>
@@ -1721,7 +1730,17 @@ function Login({ onShowRegister }) {
           <button type="submit" disabled={loading} style={{width:"100%",padding:12,background:"#1A2E44",color:"#fff",border:"none",borderRadius:8,fontSize:14,fontWeight:600,cursor:"pointer"}}>
             {loading ? "Connexion..." : "Se connecter"}
           </button>
+          <div style={{textAlign:"center",marginTop:12}}>
+            {resetSent ? (
+              <div style={{color:"#0F6E56",fontSize:13}}>✅ Email envoyé ! Vérifie ta boîte mail.</div>
+            ) : (
+              <button type="button" onClick={handleReset} style={{background:"none",border:"none",color:"#888",fontSize:12,cursor:"pointer",textDecoration:"underline"}}>
+                Mot de passe oublié ?
+              </button>
+            )}
+          </div>
         </form>
+     
         <div style={{marginTop:20,textAlign:"center",paddingTop:20,borderTop:"0.5px solid #E8E8E4"}}>
           <p style={{fontSize:13,color:"#888",marginBottom:10}}>Pas encore de compte ?</p>
           <button onClick={onShowRegister} style={{width:"100%",padding:12,background:"#E1F5EE",color:"#0F6E56",border:"none",borderRadius:8,fontSize:14,fontWeight:600,cursor:"pointer"}}>
