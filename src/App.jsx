@@ -1698,11 +1698,18 @@ function Login({ onShowRegister }) {
   }
   const handleReset = async () => {
   if (!email) return alert("Entre ton email d'abord")
-  const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: 'https://snacksafe.packbag.fr'
-  })
-  if (error) alert("Erreur : " + JSON.stringify(error))
-  else setResetSent(true)
+  try {
+    const res = await fetch('https://packbag.fr/snacksafe/reset-password.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email })
+    })
+    const data = await res.json()
+    if (data.success) setResetSent(true)
+    else alert("Erreur : " + data.error)
+  } catch(e) {
+    alert("Erreur de connexion")
+  }
 }
 
   return (
