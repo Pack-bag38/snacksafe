@@ -1701,7 +1701,7 @@ function Login({ onShowRegister }) {
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
     redirectTo: 'https://snacksafe.packbag.fr'
   })
-  if (error) alert("Erreur : " + error.message)
+  if (error) alert("Erreur : " + JSON.stringify(error))
   else setResetSent(true)
 }
 
