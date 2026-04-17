@@ -81,7 +81,7 @@ const ST = {
 const tempStatus = (val, eq) => {
   if (eq.type === "froid") {
     if (eq.temp_max && val > eq.temp_max) return "bad"
-    if (eq.temp_max && val > eq.temp_max - 1) return "warn"
+    if (eq.temp_max && val > eq.temp_max - 1 && val < eq.temp_max) return "warn"
     return "ok"
   }
   if (eq.type === "chaud") {
