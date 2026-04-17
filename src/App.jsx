@@ -793,7 +793,7 @@ function ClientApp({ session, profile, onLogout }) {
       </div>
 
       {/* CONTENT */}
-      {!onboardingDone ? <PageOnboarding setPage={setPage} setOnboardingDone={setOnboardingDone}/> :
+      {!onboardingDone ? <PageOnboarding setPage={setPage} setOnboardingDone={setOnboardingDone} profile={profile}/> :
         <div style={{flex:1,padding:"16px 14px 110px",overflow:"auto"}}>
         {page==="dashboard"       && <PageDashboard setPage={setPage} profile={profile}/>}
         {page==="parametres"      && <PageParametres profile={profile}/>}
@@ -833,7 +833,7 @@ function ClientApp({ session, profile, onLogout }) {
         </div>
       )
     }
-function PageOnboarding({ setPage, setOnboardingDone }) {
+function PageOnboarding({ setPage, setOnboardingDone, profile }) {
   const steps = [
     { id:"equipements", label:"Ajouter vos équipements", sub:"Frigos, congélateurs, bains-marie...", bg:"#E1F5EE", iconColor:"#0F6E56", icon:"temp", page:"equipements" },
     { id:"checklist",   label:"Faire votre 1ère checklist", sub:"Ouverture, service, fermeture", bg:"#DBEAFE", iconColor:"#185FA5", icon:"check", page:"checklist" },
@@ -892,10 +892,16 @@ function PageOnboarding({ setPage, setOnboardingDone }) {
       </div>
 
       <div style={{padding:"8px 24px 24px"}}>
-        <button onClick={()=>setOnboardingDone(true)} style={{width:"100%",padding:16,background:"#2DD4BF",border:"none",borderRadius:14,fontSize:14,fontWeight:700,color:"#1A2E44",cursor:"pointer",fontFamily:"inherit"}}>
+        <button onClick={async ()=>{
+  await supabase.from('profiles').update({onboarding_done: true}).eq('id', profile.id)
+  setOnboardingDone(true)
+}} style={{width:"100%",padding:16,background:"#2DD4BF",border:"none",borderRadius:14,fontSize:14,fontWeight:700,color:"#1A2E44",cursor:"pointer",fontFamily:"inherit"}}>
           Accéder à mon tableau de bord
         </button>
-        <button onClick={()=>setOnboardingDone(true)} style={{width:"100%",padding:12,background:"transparent",border:"none",fontSize:12,color:"#94A3B8",cursor:"pointer",fontFamily:"inherit",marginTop:8}}>
+        <button onClick={async ()=>{
+  await supabase.from('profiles').update({onboarding_done: true}).eq('id', profile.id)
+  setOnboardingDone(true)
+}} style={{width:"100%",padding:12,background:"transparent",border:"none",fontSize:12,color:"#94A3B8",cursor:"pointer",fontFamily:"inherit",marginTop:8}}>
           Passer l'introduction
         </button>
       </div>
