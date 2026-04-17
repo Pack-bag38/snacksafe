@@ -86,8 +86,7 @@ const tempStatus = (val, eq) => {
   }
   if (eq.type === "chaud") {
     if (eq.temp_min && val < eq.temp_min) return "bad"
-    if (eq.temp_min && val < eq.temp_min + 3) return "warn"
-    return "ok"
+       return "ok"
   }
   return "ok"
 }
