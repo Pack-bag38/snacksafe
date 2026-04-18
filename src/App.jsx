@@ -760,7 +760,10 @@ function ClientApp({ session, profile, onLogout }) {
   const [page, setPage] = useState("dashboard")
   const [pinOk, setPinOk] = useState(false)
   const [pinInput, setPinInput] = useState("")
-  const [onboardingDone, setOnboardingDone] = useState(!!profile?.onboarding_done)
+  const [onboardingDone, setOnboardingDone] = useState(false)
+  useEffect(() => {
+  if (profile?.onboarding_done) setOnboardingDone(true)
+}, [profile])
 
   const NAV_ROW1 = [
     { id:"dashboard",   icon:"home",     label:"Accueil"    },
