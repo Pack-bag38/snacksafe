@@ -762,7 +762,9 @@ function ClientApp({ session, profile, onLogout }) {
   const [pinInput, setPinInput] = useState("")
   const [onboardingDone, setOnboardingDone] = useState(false)
   useEffect(() => {
-  if (profile?.onboarding_done) setOnboardingDone(true)
+  if (profile !== null) {
+    setOnboardingDone(!!profile?.onboarding_done)
+  }
 }, [profile])
 
   const NAV_ROW1 = [
