@@ -1139,7 +1139,12 @@ function PageReception({ profile }) {
     commentaire: "", photo_url: ""
   })
 
- useEffect(() => { if (profile?.id) { loadReceptions(); loadFournisseurs() } }, [profile])
+ useEffect(() => { 
+  if (profile) { 
+    loadReceptions()
+    loadFournisseurs() 
+  } 
+}, [profile?.id, tenantId])
 
   const loadReceptions = async () => {
     setLoading(true)
