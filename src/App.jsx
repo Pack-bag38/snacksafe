@@ -1368,10 +1368,10 @@ console.log("fournisseurs error =", error)
         <div style={{marginBottom:10}}>
           <label style={{fontSize:11,color:"#666",display:"block",marginBottom:4}}>Fournisseur *</label>
           <select value={form.fournisseur_id} onChange={handleSelectFournisseur}
-            style={{width:"100%",padding:"8px 12px",border:"1px solid #E0E0DC",borderRadius:8,fontSize:13,outline:"none",background:"#fff"}}>
+            style={{width:"100%",padding:"8px 12px",border:"1px solid #E0E0DC",borderRadius:8,fontSize:13,outline:"none",background:"#fff",color:"#222"}}>
             <option value="">— Choisir un fournisseur —</option>
             {console.log("render fournisseurs=", fournisseurs)}
-            {fournisseurs.map(f => <option key={f.id} value={f.id}>{f.nom}</option>)}
+            {fournisseurs.map(f => <option key={f.id} value={f.id} style={{color:"#222",background:"#fff"}}>{f.nom}</option>)}
           </select>
           {fournisseurs.length === 0 && <div style={{fontSize:11,color:"#F59E0B",marginTop:4}}>
             ⚠️ Aucun fournisseur — ajoutez-en dans l'onglet Référentiel
