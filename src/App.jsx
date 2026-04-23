@@ -926,20 +926,32 @@ function PageDashboard({ setPage, profile }) {
   }, [tenantId])
 
   const MODULES = [
-    { id:"equipements", label:"Températures", bg:"#FF6B6B", icon:"temp" },
-    { id:"checklist",   label:"Checklist",    bg:"#4ECDC4", icon:"check" },
-    { id:"reception",   label:"Réception",    bg:"#A78BFA", icon:"box" },
-    { id:"maintien",    label:"Chaud",        bg:"#FF9F43", icon:"fire" },
-    { id:"refroidissement", label:"Froid",    bg:"#54A0FF", icon:"snow" },
-    { id:"actions",     label:"Actions",      bg:"#F9CA24", icon:"warning", textColor:"#7D5A00" },
-    { id:"rapports",    label:"Rapports",     bg:"#6AB04C", icon:"report" },
-    { id:"reglementation", label:"Règlement.", bg:"#EE5A24", icon:"clip" },
-    { id:"parametres",  label:"Paramètres",   bg:"#B8E994", icon:"settings", textColor:"#2C6B2F" },
+    { id:"equipements",    label:"Températures",  bg:"#FF6B6B", icon:"temp" },
+    { id:"checklist",      label:"Checklist",      bg:"#4ECDC4", icon:"check" },
+    { id:"reception",      label:"Réception",      bg:"#A78BFA", icon:"box" },
+    { id:"maintien",       label:"Chaud",          bg:"#FF9F43", icon:"fire" },
+    { id:"refroidissement",label:"Froid",          bg:"#54A0FF", icon:"snow" },
+    { id:"actions",        label:"Actions",        bg:"#F9CA24", icon:"warning", textColor:"#7D5A00" },
+    { id:"rapports",       label:"Rapports",       bg:"#6AB04C", icon:"report" },
+    { id:"reglementation", label:"Règlement.",     bg:"#EE5A24", icon:"clip" },
+    { id:"parametres",     label:"Paramètres",     bg:"#B8E994", icon:"settings", textColor:"#2C6B2F" },
   ]
+
+  const hour = new Date().getHours()
+  const greeting = hour < 12 ? "Bonjour" : hour < 18 ? "Bon après-midi" : "Bonsoir"
 
   return (
     <div style={{display:"flex",flexDirection:"column",minHeight:"calc(100vh - 120px)"}}>
-          {/* Alerte */}
+
+      {/* Greeting */}
+      <div style={{marginBottom:16,padding:"4px 0"}}>
+        <div style={{fontSize:20,fontWeight:700,color:"#1A2E44"}}>{greeting} 👋</div>
+        <div style={{fontSize:13,color:"#888",marginTop:2}}>
+          {todayAlerts.length > 0 ? `⚠️ ${todayAlerts.length} alerte(s) aujourd'hui` : "✅ Tout est sous contrôle"}
+        </div>
+      </div>
+
+      {/* Alertes */}
       {todayAlerts.length > 0 && (
         <div style={{marginBottom:14}}>
           {todayAlerts.map((a,i) => (
@@ -955,14 +967,15 @@ function PageDashboard({ setPage, profile }) {
       )}
 
       {/* KPI row */}
-      <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,marginBottom:16}}>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,marginBottom:20}}>
         {[
-          { label:"Alertes", val:todayAlerts.length, color:todayAlerts.length>0?"#EF4444":"#10B981" },
-          { label:"CCP ok",  val:`${HACCP_POINTS.filter(h=>h.status==="ok").length}/${HACCP_POINTS.length}`, color:"#1A2E44" },
-          { label:"Formation", val:"100%", color:"#10B981" },
+          { label:"Alertes", val:todayAlerts.length, color:todayAlerts.length>0?"#EF4444":"#10B981", icon:"🚨" },
+          { label:"CCP ok",  val:`${HACCP_POINTS.filter(h=>h.status==="ok").length}/${HACCP_POINTS.length}`, color:"#1A2E44", icon:"✅" },
+          { label:"Formation", val:"100%", color:"#10B981", icon:"🎓" },
         ].map((k,i) => (
-          <div key={i} style={{background:"#fff",borderRadius:12,padding:"12px 8px",border:"0.5px solid #E2E8F0",textAlign:"center"}}>
-            <div style={{fontSize:20,fontWeight:600,color:k.color,lineHeight:1}}>{k.val}</div>
+          <div key={i} style={{background:"#fff",borderRadius:16,padding:"14px 8px",border:"0.5px solid #E2E8F0",textAlign:"center",boxShadow:"0 2px 8px rgba(0,0,0,0.06)"}}>
+            <div style={{fontSize:18}}>{k.icon}</div>
+            <div style={{fontSize:20,fontWeight:700,color:k.color,lineHeight:1,marginTop:4}}>{k.val}</div>
             <div style={{fontSize:10,color:"#94A3B8",marginTop:3}}>{k.label}</div>
           </div>
         ))}
@@ -973,15 +986,24 @@ function PageDashboard({ setPage, profile }) {
 
       {/* Modules grid */}
       <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:12}}>
-              {MODULES.map((m,i) => (
-          <button key={i} onClick={()=>setPage(m.id)} style={{background:m.bg,borderRadius:18,padding:"16px 10px",border:"none",textAlign:"center",cursor:"pointer",fontFamily:"inherit"}}>
-            <div style={{width:44,height:44,background:"rgba(255,255,255,0.25)",borderRadius:14,display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 10px"}}>
-              <Icon name={m.icon} size={22} color={m.textColor || "#fff"}/>
+        {MODULES.map((m,i) => (
+          <button key={i} onClick={()=>setPage(m.id)} style={{background:m.bg,borderRadius:20,padding:"18px 10px",border:"none",textAlign:"center",cursor:"pointer",fontFamily:"inherit",boxShadow:"0 4px 12px rgba(0,0,0,0.12)",transform:"scale(1)",transition:"transform 0.1s"}}>
+            <div style={{width:48,height:48,background:"rgba(255,255,255,0.25)",borderRadius:16,display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 10px"}}>
+              <Icon name={m.icon} size={24} color={m.textColor || "#fff"}/>
             </div>
-            <div style={{fontSize:11,fontWeight:600,color:m.textColor || "#fff"}}>{m.label}</div>
+            <div style={{fontSize:11,fontWeight:700,color:m.textColor || "#fff",letterSpacing:0.3}}>{m.label}</div>
           </button>
         ))}
       </div>
+
+      {/* Dernière activité */}
+      <div style={{marginTop:20,background:"#fff",borderRadius:16,padding:"16px",boxShadow:"0 2px 8px rgba(0,0,0,0.06)"}}>
+        <div style={{fontSize:13,fontWeight:600,color:"#1A2E44",marginBottom:10}}>📋 Dernière activité</div>
+        <div style={{fontSize:12,color:"#888",textAlign:"center",padding:"10px 0"}}>
+          Aucune activité récente
+        </div>
+      </div>
+
     </div>
   )
 }
