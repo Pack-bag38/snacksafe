@@ -1130,7 +1130,7 @@ function PageReception({ profile }) {
   const [savingRef, setSavingRef] = useState(false)
   const [msgRef, setMsgRef] = useState("")
 
-  const tenantId = profile?.tenant_id
+  const tenantId = profile?.tenant_id || profile?.id
   const [form, setForm] = useState({
     fournisseur_id: "", fournisseur: "", produit: "", temperature: "",
     dlc: "", aspect_visuel: "conforme", origine: "",
