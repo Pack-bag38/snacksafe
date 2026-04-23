@@ -1370,6 +1370,7 @@ console.log("fournisseurs error =", error)
           <select value={form.fournisseur_id} onChange={handleSelectFournisseur}
             style={{width:"100%",padding:"8px 12px",border:"1px solid #E0E0DC",borderRadius:8,fontSize:13,outline:"none",background:"#fff"}}>
             <option value="">— Choisir un fournisseur —</option>
+            {console.log("render fournisseurs=", fournisseurs)}
             {fournisseurs.map(f => <option key={f.id} value={f.id}>{f.nom}</option>)}
           </select>
           {fournisseurs.length === 0 && <div style={{fontSize:11,color:"#F59E0B",marginTop:4}}>
