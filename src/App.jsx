@@ -1383,7 +1383,7 @@ console.log("fournisseurs error =", error)
           <label style={{fontSize:11,color:"#666",display:"block",marginBottom:4}}>Produit *</label>
           <select value={form.produit} onChange={e=>setForm(p=>({...p,produit:e.target.value}))}
             disabled={!form.fournisseur_id}
-            style={{width:"100%",padding:"8px 12px",border:"1px solid #E0E0DC",borderRadius:8,fontSize:13,outline:"none",background:form.fournisseur_id?"#fff":"#F8F8F6"}}>
+            style={{width:"100%",padding:"8px 12px",border:"1px solid #E0E0DC",borderRadius:8,fontSize:13,outline:"none",background:form.fournisseur_id?"#fff":"#F8F8F6",color:"#222"}}>
             <option value="">— Choisir un produit —</option>
             {articles.map(a => <option key={a.id} value={a.nom} style={{color:"#222",background:"#fff"}}>{a.nom}</option>)}
           </select>
