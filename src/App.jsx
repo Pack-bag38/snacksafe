@@ -1139,7 +1139,7 @@ function PageReception({ profile }) {
     commentaire: "", photo_url: ""
   })
 
-  useEffect(() => { if (profile?.id) { loadReceptions(); loadFournisseurs() } }, [profile?.id])
+ useEffect(() => { if (profile?.id) { loadReceptions(); loadFournisseurs() } }, [profile])
 
   const loadReceptions = async () => {
     setLoading(true)
@@ -1152,7 +1152,7 @@ function PageReception({ profile }) {
   const loadFournisseurs = async () => {console.log("profile?.id =", profile?.id)
 console.log("tenantId =", tenantId)
     const { data, error } = await supabase.from("fournisseurs").select("*")
-      .eq("user_id", profile?.id || tenantId).order("nom")
+      .eq("user_id", profile?.id).order("nom")
     setFournisseurs(data || [])
 console.log("fournisseurs data =", data)
 console.log("fournisseurs error =", error)
