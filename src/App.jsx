@@ -1119,16 +1119,27 @@ function PageReception({ profile }) {
   const [saving, setSaving] = useState(false)
   const [msg, setMsg] = useState("")
   const [uploading, setUploading] = useState(false)
+  const [activeTab, setActiveTab] = useState("receptions") // "receptions" | "referentiel"
+
+  // Référentiel
+  const [fournisseurs, setFournisseurs] = useState([])
+  const [articles, setArticles] = useState([]) // articles du fournisseur sélectionné
+  const [newFournisseur, setNewFournisseur] = useState("")
+  const [newArticle, setNewArticle] = useState("")
+  const [selectedFournisseurRef, setSelectedFournisseurRef] = useState(null)
+  const [savingRef, setSavingRef] = useState(false)
+  const [msgRef, setMsgRef] = useState("")
+
   const tenantId = profile?.tenant_id
   const [form, setForm] = useState({
-    fournisseur: "", produit: "", temperature: "",
+    fournisseur_id: "", fournisseur: "", produit: "", temperature: "",
     dlc: "", aspect_visuel: "conforme", origine: "",
     numero_lot: "", etiquetage_conforme: true,
     stockage_separe: true, statut: "accepte",
     commentaire: "", photo_url: ""
   })
 
-  useEffect(() => { if (tenantId) loadReceptions() }, [tenantId])
+  useEffect(() => { if (tenantId) { loadReceptions(); loadFournisseurs() } }, [tenantId])
 
   const loadReceptions = async () => {
     setLoading(true)
@@ -1136,6 +1147,72 @@ function PageReception({ profile }) {
       .eq("tenant_id", tenantId).order("created_at", { ascending: false }).limit(20)
     setReceptions(data || [])
     setLoading(false)
+  }
+
+  const loadFournisseurs = async () => {
+    const { data } = await supabase.from("fournisseurs").select("*")
+      .eq("tenant_id", tenantId).order("nom")
+    setFournisseurs(data || [])
+  }
+
+  const loadArticles = async (fournisseurId) => {
+    const { data } = await supabase.from("articles").select("*")
+      .eq("fournisseur_id", fournisseurId).order("nom")
+    setArticles(data || [])
+  }
+
+  const handleSelectFournisseur = (e) => {
+    const id = e.target.value
+    const f = fournisseurs.find(f => f.id === id)
+    setForm(p => ({ ...p, fournisseur_id: id, fournisseur: f?.nom || "", produit: "" }))
+    if (id) loadArticles(id)
+    else setArticles([])
+  }
+
+  // --- Référentiel : ajout fournisseur ---
+  const addFournisseur = async () => {
+    if (!newFournisseur.trim()) return
+    setSavingRef(true)
+    const { data, error } = await supabase.from("fournisseurs")
+      .insert([{ tenant_id: tenantId, nom: newFournisseur.trim() }]).select().single()
+    if (error) { setMsgRef("Erreur : " + error.message) }
+    else {
+      setFournisseurs(p => [...p, data])
+      setNewFournisseur("")
+      setSelectedFournisseurRef(data)
+      setArticles([])
+      setMsgRef("✅ Fournisseur ajouté !")
+    }
+    setSavingRef(false)
+    setTimeout(() => setMsgRef(""), 2500)
+  }
+
+  const deleteFournisseur = async (id) => {
+    if (!confirm("Supprimer ce fournisseur et tous ses articles ?")) return
+    await supabase.from("fournisseurs").delete().eq("id", id)
+    setFournisseurs(p => p.filter(f => f.id !== id))
+    if (selectedFournisseurRef?.id === id) { setSelectedFournisseurRef(null); setArticles([]) }
+  }
+
+  // --- Référentiel : ajout article ---
+  const addArticle = async () => {
+    if (!newArticle.trim() || !selectedFournisseurRef) return
+    setSavingRef(true)
+    const { data, error } = await supabase.from("articles")
+      .insert([{ fournisseur_id: selectedFournisseurRef.id, nom: newArticle.trim() }]).select().single()
+    if (error) { setMsgRef("Erreur : " + error.message) }
+    else {
+      setArticles(p => [...p, data])
+      setNewArticle("")
+      setMsgRef("✅ Article ajouté !")
+    }
+    setSavingRef(false)
+    setTimeout(() => setMsgRef(""), 2500)
+  }
+
+  const deleteArticle = async (id) => {
+    await supabase.from("articles").delete().eq("id", id)
+    setArticles(p => p.filter(a => a.id !== id))
   }
 
   const handlePhoto = async (e) => {
@@ -1176,7 +1253,8 @@ function PageReception({ profile }) {
     if (error) setMsg("Erreur : " + error.message)
     else {
       setMsg("✅ Fiche enregistrée !")
-      setForm({ fournisseur:"", produit:"", temperature:"", dlc:"", aspect_visuel:"conforme", origine:"", numero_lot:"", etiquetage_conforme:true, stockage_separe:true, statut:"accepte", commentaire:"", photo_url:"" })
+      setForm({ fournisseur_id:"", fournisseur:"", produit:"", temperature:"", dlc:"", aspect_visuel:"conforme", origine:"", numero_lot:"", etiquetage_conforme:true, stockage_separe:true, statut:"accepte", commentaire:"", photo_url:"" })
+      setArticles([])
       setShowForm(false)
       loadReceptions()
     }
@@ -1184,111 +1262,231 @@ function PageReception({ profile }) {
     setTimeout(() => setMsg(""), 3000)
   }
 
+  // ---- ONGLETS ----
+  const tabStyle = (t) => ({
+    padding:"8px 16px", fontSize:12, fontWeight:600, cursor:"pointer",
+    border:"none", borderRadius:8, fontFamily:"inherit",
+    background: activeTab===t ? "#1D9E75" : "#F0F0EC",
+    color: activeTab===t ? "#fff" : "#666"
+  })
+
   return <div>
-    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
-      <div style={{fontSize:13,color:"#888"}}>{receptions.length} fiche(s)</div>
-      <button onClick={()=>setShowForm(!showForm)} style={{padding:"8px 16px",background:"#1D9E75",color:"#fff",border:"none",borderRadius:8,cursor:"pointer",fontFamily:"inherit",fontSize:12,fontWeight:600}}>+ Nouvelle fiche</button>
+    {/* Onglets */}
+    <div style={{display:"flex",gap:8,marginBottom:16}}>
+      <button style={tabStyle("receptions")} onClick={()=>setActiveTab("receptions")}>📦 Réceptions</button>
+      <button style={tabStyle("referentiel")} onClick={()=>setActiveTab("referentiel")}>📋 Référentiel</button>
     </div>
 
-    {msg && <div style={{padding:"10px 14px",background:msg.includes("✅")?"#E1F5EE":"#FCEBEB",color:msg.includes("✅")?"#085041":"#501313",borderRadius:8,marginBottom:12,fontSize:13}}>{msg}</div>}
+    {/* ===== ONGLET RÉFÉRENTIEL ===== */}
+    {activeTab === "referentiel" && <div>
+      {msgRef && <div style={{padding:"10px 14px",background:msgRef.includes("✅")?"#E1F5EE":"#FCEBEB",color:msgRef.includes("✅")?"#085041":"#501313",borderRadius:8,marginBottom:12,fontSize:13}}>{msgRef}</div>}
 
-    {showForm && <div style={{background:"#fff",border:"1px solid #1D9E75",borderRadius:12,padding:16,marginBottom:16}}>
-      <div style={{fontSize:13,fontWeight:700,color:"#222",marginBottom:14}}>📦 Nouvelle réception</div>
-
-      {[["Fournisseur *","fournisseur","text"],["Produit *","produit","text"],["Température (°C)","temperature","number"],["DLC / DDM","dlc","date"]].map(([label,key,type]) =>
-        <div key={key} style={{marginBottom:10}}>
-          <label style={{fontSize:11,color:"#666",display:"block",marginBottom:4}}>{label}</label>
-          <input type={type} value={form[key]} onChange={e=>setForm(p=>({...p,[key]:e.target.value}))}
-            style={{width:"100%",padding:"8px 12px",border:"1px solid #E0E0DC",borderRadius:8,fontSize:13,outline:"none",boxSizing:"border-box"}}/>
-        </div>
-      )}
-
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:10}}>
-        <div>
-          <label style={{fontSize:11,color:"#666",display:"block",marginBottom:4}}>🌍 Origine</label>
-          <input value={form.origine} onChange={e=>setForm(p=>({...p,origine:e.target.value}))}
-            placeholder="Ex: France, Espagne..."
-            style={{width:"100%",padding:"8px 12px",border:"1px solid #E0E0DC",borderRadius:8,fontSize:13,outline:"none",boxSizing:"border-box"}}/>
-        </div>
-        <div>
-          <label style={{fontSize:11,color:"#666",display:"block",marginBottom:4}}>🏷️ N° de lot</label>
-          <input value={form.numero_lot} onChange={e=>setForm(p=>({...p,numero_lot:e.target.value}))}
-            placeholder="Ex: LOT2024..."
-            style={{width:"100%",padding:"8px 12px",border:"1px solid #E0E0DC",borderRadius:8,fontSize:13,outline:"none",boxSizing:"border-box"}}/>
-        </div>
-      </div>
-
-      <div style={{marginBottom:10}}>
-        <label style={{fontSize:11,color:"#666",display:"block",marginBottom:4}}>Aspect visuel</label>
-        <select value={form.aspect_visuel} onChange={e=>setForm(p=>({...p,aspect_visuel:e.target.value}))}
-          style={{width:"100%",padding:"8px 12px",border:"1px solid #E0E0DC",borderRadius:8,fontSize:13,outline:"none",background:"#fff"}}>
-          <option value="conforme">✅ Conforme</option>
-          <option value="non_conforme">❌ Non conforme</option>
-          <option value="acceptable">⚠️ Acceptable</option>
-        </select>
-      </div>
-
-      {[["etiquetage_conforme","🏷️ Étiquetage conforme"],["stockage_separe","📦 Stockage cru/cuit séparé"]].map(([key,label]) =>
-        <div key={key} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 0",borderBottom:"0.5px solid #F0F0EC"}}>
-          <span style={{fontSize:13,color:"#222"}}>{label}</span>
-          <button onClick={()=>setForm(p=>({...p,[key]:!p[key]}))}
-            style={{padding:"4px 14px",borderRadius:20,border:"none",cursor:"pointer",fontFamily:"inherit",fontSize:12,fontWeight:600,background:form[key]?"#1D9E75":"#E0E0DC",color:form[key]?"#fff":"#666"}}>
-            {form[key]?"Oui":"Non"}
+      {/* Ajout fournisseur */}
+      <div style={{background:"#fff",border:"0.5px solid #E8E8E4",borderRadius:12,padding:16,marginBottom:12}}>
+        <div style={{fontSize:13,fontWeight:700,color:"#222",marginBottom:12}}>🏢 Fournisseurs</div>
+        <div style={{display:"flex",gap:8,marginBottom:12}}>
+          <input value={newFournisseur} onChange={e=>setNewFournisseur(e.target.value)}
+            onKeyDown={e=>e.key==="Enter"&&addFournisseur()}
+            placeholder="Nom du fournisseur..."
+            style={{flex:1,padding:"8px 12px",border:"1px solid #E0E0DC",borderRadius:8,fontSize:13,outline:"none"}}/>
+          <button onClick={addFournisseur} disabled={savingRef}
+            style={{padding:"8px 14px",background:"#1D9E75",color:"#fff",border:"none",borderRadius:8,cursor:"pointer",fontFamily:"inherit",fontSize:12,fontWeight:600}}>
+            + Ajouter
           </button>
         </div>
-      )}
 
-      <div style={{marginTop:12,marginBottom:10}}>
-        <label style={{fontSize:11,color:"#666",display:"block",marginBottom:4}}>Statut final</label>
-        <select value={form.statut} onChange={e=>setForm(p=>({...p,statut:e.target.value}))}
-          style={{width:"100%",padding:"8px 12px",border:"1px solid #E0E0DC",borderRadius:8,fontSize:13,outline:"none",background:"#fff"}}>
-          <option value="accepte">✅ Accepté</option>
-          <option value="refuse">❌ Refusé</option>
-          <option value="reserve">⚠️ Accepté avec réserve</option>
-        </select>
+        {/* Liste fournisseurs */}
+        {fournisseurs.length === 0
+          ? <div style={{fontSize:12,color:"#aaa",textAlign:"center",padding:"8px 0"}}>Aucun fournisseur — ajoutez-en un !</div>
+          : fournisseurs.map(f => (
+            <div key={f.id} onClick={()=>{ setSelectedFournisseurRef(f); loadArticles(f.id) }}
+              style={{display:"flex",justifyContent:"space-between",alignItems:"center",
+                padding:"10px 12px",borderRadius:8,cursor:"pointer",marginBottom:4,
+                background:selectedFournisseurRef?.id===f.id?"#E1F5EE":"#F8F8F6",
+                border:selectedFournisseurRef?.id===f.id?"1px solid #1D9E75":"1px solid transparent"}}>
+              <span style={{fontSize:13,fontWeight:selectedFournisseurRef?.id===f.id?700:400,color:"#222"}}>
+                {selectedFournisseurRef?.id===f.id?"▶ ":""}{f.nom}
+              </span>
+              <button onClick={e=>{e.stopPropagation();deleteFournisseur(f.id)}}
+                style={{background:"none",border:"none",cursor:"pointer",fontSize:16,color:"#ccc",padding:"0 4px"}}>🗑️</button>
+            </div>
+          ))
+        }
       </div>
 
-      <div style={{marginBottom:10}}>
-        <label style={{fontSize:11,color:"#666",display:"block",marginBottom:4}}>Commentaire</label>
-        <textarea value={form.commentaire} onChange={e=>setForm(p=>({...p,commentaire:e.target.value}))} rows={2}
-          style={{width:"100%",padding:"8px 12px",border:"1px solid #E0E0DC",borderRadius:8,fontSize:13,outline:"none",boxSizing:"border-box",fontFamily:"inherit"}}/>
-      </div>
+      {/* Articles du fournisseur sélectionné */}
+      {selectedFournisseurRef && <div style={{background:"#fff",border:"0.5px solid #E8E8E4",borderRadius:12,padding:16}}>
+        <div style={{fontSize:13,fontWeight:700,color:"#222",marginBottom:12}}>
+          🛒 Articles — <span style={{color:"#1D9E75"}}>{selectedFournisseurRef.nom}</span>
+        </div>
+        <div style={{display:"flex",gap:8,marginBottom:12}}>
+          <input value={newArticle} onChange={e=>setNewArticle(e.target.value)}
+            onKeyDown={e=>e.key==="Enter"&&addArticle()}
+            placeholder="Nom de l'article..."
+            style={{flex:1,padding:"8px 12px",border:"1px solid #E0E0DC",borderRadius:8,fontSize:13,outline:"none"}}/>
+          <button onClick={addArticle} disabled={savingRef}
+            style={{padding:"8px 14px",background:"#1D9E75",color:"#fff",border:"none",borderRadius:8,cursor:"pointer",fontFamily:"inherit",fontSize:12,fontWeight:600}}>
+            + Ajouter
+          </button>
+        </div>
 
-      <div style={{marginBottom:14}}>
-        <label style={{fontSize:11,color:"#666",display:"block",marginBottom:4}}>📷 Photo bon de livraison</label>
-        <input type="file" accept="image/*" capture="environment" onChange={handlePhoto}
-          style={{width:"100%",fontSize:12,color:"#666"}}/>
-        {uploading && <div style={{fontSize:11,color:"#888",marginTop:4}}>⏳ Upload en cours...</div>}
-        {form.photo_url && <img src={form.photo_url} alt="bon de livraison"
-          style={{width:"100%",borderRadius:8,marginTop:8,maxHeight:200,objectFit:"cover"}}/>}
-      </div>
-
-      <div style={{display:"flex",gap:8}}>
-        <button onClick={handleSubmit} disabled={saving||uploading} style={{padding:"8px 20px",background:"#1D9E75",color:"#fff",border:"none",borderRadius:8,cursor:"pointer",fontFamily:"inherit",fontSize:12,fontWeight:600}}>{saving?"...":"Enregistrer"}</button>
-        <button onClick={()=>setShowForm(false)} style={{padding:"8px 16px",background:"#fff",color:"#666",border:"1px solid #E0E0DC",borderRadius:8,cursor:"pointer",fontFamily:"inherit",fontSize:12}}>Annuler</button>
-      </div>
+        {articles.length === 0
+          ? <div style={{fontSize:12,color:"#aaa",textAlign:"center",padding:"8px 0"}}>Aucun article pour ce fournisseur</div>
+          : articles.map(a => (
+            <div key={a.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",
+              padding:"9px 12px",borderRadius:8,background:"#F8F8F6",marginBottom:4}}>
+              <span style={{fontSize:13,color:"#222"}}>📌 {a.nom}</span>
+              <button onClick={()=>deleteArticle(a.id)}
+                style={{background:"none",border:"none",cursor:"pointer",fontSize:16,color:"#ccc",padding:"0 4px"}}>🗑️</button>
+            </div>
+          ))
+        }
+      </div>}
     </div>}
 
-    {loading ? <div style={{color:"#888",fontSize:13,textAlign:"center",padding:20}}>Chargement...</div> :
-      receptions.length === 0 ? <div style={{background:"#fff",border:"0.5px solid #E8E8E4",borderRadius:12,padding:24,textAlign:"center"}}>
-        <div style={{fontSize:32,marginBottom:8}}>📦</div>
-        <div style={{fontSize:13,color:"#888"}}>Aucune réception enregistrée</div>
-      </div> :
-      <div style={{background:"#fff",border:"0.5px solid #E8E8E4",borderRadius:12,overflow:"hidden"}}>
-        {receptions.map((r,i) => <div key={r.id} style={{padding:"13px 16px",borderBottom:i<receptions.length-1?"0.5px solid #F0F0EC":"none"}}>
-          <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
-            <span style={{fontSize:13,fontWeight:600,color:"#222"}}>{r.produit}</span>
-            <Tag color={r.statut==="accepte"?"green":r.statut==="refuse"?"red":"amber"}>
-              {r.statut==="accepte"?"✅ Accepté":r.statut==="refuse"?"❌ Refusé":"⚠️ Réserve"}
-            </Tag>
-          </div>
-          <div style={{fontSize:11,color:"#888"}}>{r.fournisseur} · {new Date(r.date).toLocaleDateString("fr-FR")}</div>
-          {r.origine && <div style={{fontSize:11,color:"#555",marginTop:2}}>🌍 {r.origine} {r.numero_lot && `· Lot: ${r.numero_lot}`}</div>}
-          {r.temperature && <div style={{fontSize:11,color:r.temperature_conforme?"#0F6E56":"#A32D2D",marginTop:2}}>🌡️ {r.temperature}°C {r.temperature_conforme?"✓":"⚠️"}</div>}
-          {r.photo_url && <img src={r.photo_url} alt="bon" style={{width:"100%",borderRadius:8,marginTop:8,maxHeight:150,objectFit:"cover"}}/>}
-        </div>)}
+    {/* ===== ONGLET RÉCEPTIONS ===== */}
+    {activeTab === "receptions" && <div>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
+        <div style={{fontSize:13,color:"#888"}}>{receptions.length} fiche(s)</div>
+        <button onClick={()=>setShowForm(!showForm)} style={{padding:"8px 16px",background:"#1D9E75",color:"#fff",border:"none",borderRadius:8,cursor:"pointer",fontFamily:"inherit",fontSize:12,fontWeight:600}}>+ Nouvelle fiche</button>
       </div>
-    }
+
+      {msg && <div style={{padding:"10px 14px",background:msg.includes("✅")?"#E1F5EE":"#FCEBEB",color:msg.includes("✅")?"#085041":"#501313",borderRadius:8,marginBottom:12,fontSize:13}}>{msg}</div>}
+
+      {showForm && <div style={{background:"#fff",border:"1px solid #1D9E75",borderRadius:12,padding:16,marginBottom:16}}>
+        <div style={{fontSize:13,fontWeight:700,color:"#222",marginBottom:14}}>📦 Nouvelle réception</div>
+
+        {/* SELECT Fournisseur */}
+        <div style={{marginBottom:10}}>
+          <label style={{fontSize:11,color:"#666",display:"block",marginBottom:4}}>Fournisseur *</label>
+          <select value={form.fournisseur_id} onChange={handleSelectFournisseur}
+            style={{width:"100%",padding:"8px 12px",border:"1px solid #E0E0DC",borderRadius:8,fontSize:13,outline:"none",background:"#fff"}}>
+            <option value="">— Choisir un fournisseur —</option>
+            {fournisseurs.map(f => <option key={f.id} value={f.id}>{f.nom}</option>)}
+          </select>
+          {fournisseurs.length === 0 && <div style={{fontSize:11,color:"#F59E0B",marginTop:4}}>
+            ⚠️ Aucun fournisseur — ajoutez-en dans l'onglet Référentiel
+          </div>}
+        </div>
+
+        {/* SELECT Article */}
+        <div style={{marginBottom:10}}>
+          <label style={{fontSize:11,color:"#666",display:"block",marginBottom:4}}>Produit *</label>
+          <select value={form.produit} onChange={e=>setForm(p=>({...p,produit:e.target.value}))}
+            disabled={!form.fournisseur_id}
+            style={{width:"100%",padding:"8px 12px",border:"1px solid #E0E0DC",borderRadius:8,fontSize:13,outline:"none",background:form.fournisseur_id?"#fff":"#F8F8F6"}}>
+            <option value="">— Choisir un produit —</option>
+            {articles.map(a => <option key={a.id} value={a.nom}>{a.nom}</option>)}
+          </select>
+          {form.fournisseur_id && articles.length === 0 && <div style={{fontSize:11,color:"#F59E0B",marginTop:4}}>
+            ⚠️ Aucun article pour ce fournisseur — ajoutez-en dans Référentiel
+          </div>}
+        </div>
+
+        {[["Température (°C)","temperature","number"],["DLC / DDM","dlc","date"]].map(([label,key,type]) =>
+          <div key={key} style={{marginBottom:10}}>
+            <label style={{fontSize:11,color:"#666",display:"block",marginBottom:4}}>{label}</label>
+            <input type={type} value={form[key]} onChange={e=>setForm(p=>({...p,[key]:e.target.value}))}
+              style={{width:"100%",padding:"8px 12px",border:"1px solid #E0E0DC",borderRadius:8,fontSize:13,outline:"none",boxSizing:"border-box"}}/>
+          </div>
+        )}
+
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:10}}>
+          <div>
+            <label style={{fontSize:11,color:"#666",display:"block",marginBottom:4}}>🌍 Origine</label>
+            <input value={form.origine} onChange={e=>setForm(p=>({...p,origine:e.target.value}))}
+              placeholder="Ex: France..."
+              style={{width:"100%",padding:"8px 12px",border:"1px solid #E0E0DC",borderRadius:8,fontSize:13,outline:"none",boxSizing:"border-box"}}/>
+          </div>
+          <div>
+            <label style={{fontSize:11,color:"#666",display:"block",marginBottom:4}}>🏷️ N° de lot</label>
+            <input value={form.numero_lot} onChange={e=>setForm(p=>({...p,numero_lot:e.target.value}))}
+              placeholder="Ex: LOT2024..."
+              style={{width:"100%",padding:"8px 12px",border:"1px solid #E0E0DC",borderRadius:8,fontSize:13,outline:"none",boxSizing:"border-box"}}/>
+          </div>
+        </div>
+
+        <div style={{marginBottom:10}}>
+          <label style={{fontSize:11,color:"#666",display:"block",marginBottom:4}}>Aspect visuel</label>
+          <select value={form.aspect_visuel} onChange={e=>setForm(p=>({...p,aspect_visuel:e.target.value}))}
+            style={{width:"100%",padding:"8px 12px",border:"1px solid #E0E0DC",borderRadius:8,fontSize:13,outline:"none",background:"#fff"}}>
+            <option value="conforme">✅ Conforme</option>
+            <option value="non_conforme">❌ Non conforme</option>
+            <option value="acceptable">⚠️ Acceptable</option>
+          </select>
+        </div>
+
+        {[["etiquetage_conforme","🏷️ Étiquetage conforme"],["stockage_separe","📦 Stockage cru/cuit séparé"]].map(([key,label]) =>
+          <div key={key} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 0",borderBottom:"0.5px solid #F0F0EC"}}>
+            <span style={{fontSize:13,color:"#222"}}>{label}</span>
+            <button onClick={()=>setForm(p=>({...p,[key]:!p[key]}))}
+              style={{padding:"4px 14px",borderRadius:20,border:"none",cursor:"pointer",fontFamily:"inherit",fontSize:12,fontWeight:600,background:form[key]?"#1D9E75":"#E0E0DC",color:form[key]?"#fff":"#666"}}>
+              {form[key]?"Oui":"Non"}
+            </button>
+          </div>
+        )}
+
+        <div style={{marginTop:12,marginBottom:10}}>
+          <label style={{fontSize:11,color:"#666",display:"block",marginBottom:4}}>Statut final</label>
+          <select value={form.statut} onChange={e=>setForm(p=>({...p,statut:e.target.value}))}
+            style={{width:"100%",padding:"8px 12px",border:"1px solid #E0E0DC",borderRadius:8,fontSize:13,outline:"none",background:"#fff"}}>
+            <option value="accepte">✅ Accepté</option>
+            <option value="refuse">❌ Refusé</option>
+            <option value="reserve">⚠️ Accepté avec réserve</option>
+          </select>
+        </div>
+
+        <div style={{marginBottom:10}}>
+          <label style={{fontSize:11,color:"#666",display:"block",marginBottom:4}}>Commentaire</label>
+          <textarea value={form.commentaire} onChange={e=>setForm(p=>({...p,commentaire:e.target.value}))} rows={2}
+            style={{width:"100%",padding:"8px 12px",border:"1px solid #E0E0DC",borderRadius:8,fontSize:13,outline:"none",boxSizing:"border-box",fontFamily:"inherit"}}/>
+        </div>
+
+        <div style={{marginBottom:14}}>
+          <label style={{fontSize:11,color:"#666",display:"block",marginBottom:4}}>📷 Photo bon de livraison</label>
+          <input type="file" accept="image/*" capture="environment" onChange={handlePhoto}
+            style={{width:"100%",fontSize:12,color:"#666"}}/>
+          {uploading && <div style={{fontSize:11,color:"#888",marginTop:4}}>⏳ Upload en cours...</div>}
+          {form.photo_url && <img src={form.photo_url} alt="bon de livraison"
+            style={{width:"100%",borderRadius:8,marginTop:8,maxHeight:200,objectFit:"cover"}}/>}
+        </div>
+
+        <div style={{display:"flex",gap:8}}>
+          <button onClick={handleSubmit} disabled={saving||uploading}
+            style={{padding:"8px 20px",background:"#1D9E75",color:"#fff",border:"none",borderRadius:8,cursor:"pointer",fontFamily:"inherit",fontSize:12,fontWeight:600}}>
+            {saving?"...":"Enregistrer"}
+          </button>
+          <button onClick={()=>setShowForm(false)}
+            style={{padding:"8px 16px",background:"#fff",color:"#666",border:"1px solid #E0E0DC",borderRadius:8,cursor:"pointer",fontFamily:"inherit",fontSize:12}}>
+            Annuler
+          </button>
+        </div>
+      </div>}
+
+      {loading ? <div style={{color:"#888",fontSize:13,textAlign:"center",padding:20}}>Chargement...</div> :
+        receptions.length === 0
+          ? <div style={{background:"#fff",border:"0.5px solid #E8E8E4",borderRadius:12,padding:24,textAlign:"center"}}>
+              <div style={{fontSize:32,marginBottom:8}}>📦</div>
+              <div style={{fontSize:13,color:"#888"}}>Aucune réception enregistrée</div>
+            </div>
+          : <div style={{background:"#fff",border:"0.5px solid #E8E8E4",borderRadius:12,overflow:"hidden"}}>
+              {receptions.map((r,i) => (
+                <div key={r.id} style={{padding:"13px 16px",borderBottom:i<receptions.length-1?"0.5px solid #F0F0EC":"none"}}>
+                  <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
+                    <span style={{fontSize:13,fontWeight:600,color:"#222"}}>{r.produit}</span>
+                    <Tag color={r.statut==="accepte"?"green":r.statut==="refuse"?"red":"amber"}>
+                      {r.statut==="accepte"?"✅ Accepté":r.statut==="refuse"?"❌ Refusé":"⚠️ Réserve"}
+                    </Tag>
+                  </div>
+                  <div style={{fontSize:11,color:"#888"}}>{r.fournisseur} · {new Date(r.date).toLocaleDateString("fr-FR")}</div>
+                  {r.origine && <div style={{fontSize:11,color:"#555",marginTop:2}}>🌍 {r.origine} {r.numero_lot && `· Lot: ${r.numero_lot}`}</div>}
+                  {r.temperature && <div style={{fontSize:11,color:r.temperature_conforme?"#0F6E56":"#A32D2D",marginTop:2}}>🌡️ {r.temperature}°C {r.temperature_conforme?"✓":"⚠️"}</div>}
+                  {r.photo_url && <img src={r.photo_url} alt="bon" style={{width:"100%",borderRadius:8,marginTop:8,maxHeight:150,objectFit:"cover"}}/>}
+                </div>
+              ))}
+            </div>
+      }
+    </div>}
   </div>
 }
   function PageRefroidissement({ profile }) {
