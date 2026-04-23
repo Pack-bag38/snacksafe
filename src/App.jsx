@@ -1174,7 +1174,7 @@ function PageReception({ profile }) {
     if (!newFournisseur.trim()) return
     setSavingRef(true)
     const { data, error } = await supabase.from("fournisseurs")
-      .insert([{ tenant_id: tenantId, nom: newFournisseur.trim() }]).select().single()
+      .insert([{ user_id: profile?.id: tenantId, nom: newFournisseur.trim() }]).select().single()
     if (error) { setMsgRef("Erreur : " + error.message) }
     else {
       setFournisseurs(p => [...p, data])
