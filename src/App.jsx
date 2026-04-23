@@ -1385,7 +1385,7 @@ console.log("fournisseurs error =", error)
             disabled={!form.fournisseur_id}
             style={{width:"100%",padding:"8px 12px",border:"1px solid #E0E0DC",borderRadius:8,fontSize:13,outline:"none",background:form.fournisseur_id?"#fff":"#F8F8F6"}}>
             <option value="">— Choisir un produit —</option>
-            {articles.map(a => <option key={a.id} value={a.nom}>{a.nom}</option>)}
+            {articles.map(a => <option key={a.id} value={a.nom} style={{color:"#222",background:"#fff"}}>{a.nom}</option>)}
           </select>
           {form.fournisseur_id && articles.length === 0 && <div style={{fontSize:11,color:"#F59E0B",marginTop:4}}>
             ⚠️ Aucun article pour ce fournisseur — ajoutez-en dans Référentiel
