@@ -1149,7 +1149,8 @@ function PageReception({ profile }) {
     setLoading(false)
   }
 
-  const loadFournisseurs = async () => {
+  const loadFournisseurs = async () => {console.log("profile?.id =", profile?.id)
+console.log("tenantId =", tenantId)
     const { data } = await supabase.from("fournisseurs").select("*")
       .eq("user_id", profile?.id || tenantId).order("nom")
     setFournisseurs(data || [])
