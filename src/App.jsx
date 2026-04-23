@@ -1351,7 +1351,7 @@ console.log("fournisseurs error =", error)
     {activeTab === "receptions" && <div>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
         <div style={{fontSize:13,color:"#888"}}>{receptions.length} fiche(s)</div>
-        <button onClick={()=>setShowForm(!showForm)} style={{padding:"8px 16px",background:"#1D9E75",color:"#fff",border:"none",borderRadius:8,cursor:"pointer",fontFamily:"inherit",fontSize:12,fontWeight:600}}>+ Nouvelle fiche</button>
+        <button onClick={()=>{ loadFournisseurs(); setShowForm(!showForm) }} style={{padding:"8px 16px",background:"#1D9E75",color:"#fff",border:"none",borderRadius:8,cursor:"pointer",fontFamily:"inherit",fontSize:12,fontWeight:600}}>+ Nouvelle fiche</button>
       </div>
 
       {msg && <div style={{padding:"10px 14px",background:msg.includes("✅")?"#E1F5EE":"#FCEBEB",color:msg.includes("✅")?"#085041":"#501313",borderRadius:8,marginBottom:12,fontSize:13}}>{msg}</div>}
