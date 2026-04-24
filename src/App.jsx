@@ -525,7 +525,7 @@ if (tempLogs?.length > 0) {
   Object.entries(grouped).forEach(([day, logs]) => {
     doc.setFontSize(10)
     doc.setTextColor(100, 100, 100)
-    doc.text(`── ${day} ──`, 16, y); y += 6
+    doc.text(`--- ${day} ---`, 16, y); y += 6
     doc.setTextColor(0, 0, 0)
     logs.forEach(l => {
       const h = new Date(l.recorded_at).toLocaleTimeString("fr-FR", {hour:"2-digit", minute:"2-digit"})
