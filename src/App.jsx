@@ -460,6 +460,7 @@ function PageRapports({ profile }) {
       : `${new Date(dateDebut).toLocaleDateString("fr-FR")} au ${new Date(dateFin).toLocaleDateString("fr-FR")}`
     const { error } = await supabase.from("daily_reports").upsert([{
       tenant_id: tenantId, report_date: dateDebut, score,
+      date_fin: dateFin
       checklist_pct: 0, temp_alerts: alerts,
       summary: `Rapport du ${label} — ${total} relevés, ${conformes} conformes, ${alerts} alertes.`,
     }], { onConflict: "tenant_id,report_date" })
@@ -472,14 +473,15 @@ function PageRapports({ profile }) {
   const exportPDF = async (rapport) => {
     const date = rapport.report_date
     const dateFR = new Date(date).toLocaleDateString("fr-FR", {weekday:"long", day:"numeric", month:"long", year:"numeric"})
-    const dateFinPlusUn = new Date(new Date(date).getTime() + 86400000).toISOString().split("T")[0]
+    const dateFinStr = rapport.date_fin || date
+const dateFinPlusUn = new Date(new Date(dateFinStr).getTime() + 86400000).toISOString().split("T")[0]
 
-    const [{ data: tempLogs }, { data: checklogs }, { data: receptions }, { data: actions }] = await Promise.all([
-      supabase.from("temperature_logs").select("*").eq("tenant_id", tenantId).gte("recorded_at", date).lt("recorded_at", dateFinPlusUn),
-      supabase.from("checklist_logs").select("*").eq("tenant_id", tenantId).eq("date", date),
-      supabase.from("receptions").select("*").eq("tenant_id", tenantId).eq("date", date),
-      supabase.from("actions_correctives").select("*").eq("tenant_id", tenantId).eq("date", date),
-    ])
+const [{ data: tempLogs }, { data: checklogs }, { data: receptions }, { data: actions }] = await Promise.all([
+  supabase.from("temperature_logs").select("*").eq("tenant_id", tenantId).gte("recorded_at", date).lt("recorded_at", dateFinPlusUn),
+  supabase.from("checklist_logs").select("*").eq("tenant_id", tenantId).gte("date", date).lte("date", dateFinStr),
+  supabase.from("receptions").select("*").eq("tenant_id", tenantId).gte("date", date).lte("date", dateFinStr),
+  supabase.from("actions_correctives").select("*").eq("tenant_id", tenantId).gte("date", date).lte("date", dateFinStr),
+])
 
     const doc = new jsPDF()
     let y = 45
