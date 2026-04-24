@@ -460,7 +460,7 @@ function PageRapports({ profile }) {
       : `${new Date(dateDebut).toLocaleDateString("fr-FR")} au ${new Date(dateFin).toLocaleDateString("fr-FR")}`
     const { error } = await supabase.from("daily_reports").upsert([{
       tenant_id: tenantId, report_date: dateDebut, score,
-      date_fin: dateFin
+      date_fin: dateFin,
       checklist_pct: 0, temp_alerts: alerts,
       summary: `Rapport du ${label} — ${total} relevés, ${conformes} conformes, ${alerts} alertes.`,
     }], { onConflict: "tenant_id,report_date" })
