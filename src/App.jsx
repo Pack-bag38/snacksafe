@@ -567,12 +567,12 @@ function PageRapports({ profile }) {
           <div>
             <label style={{fontSize:11,color:"#666",display:"block",marginBottom:4}}>Date début</label>
             <input type="date" value={dateDebut} onChange={e=>setDateDebut(e.target.value)}
-              style={{width:"100%",padding:"8px 12px",border:"1px solid #E0E0DC",borderRadius:8,fontSize:13,outline:"none",boxSizing:"border-box",color:"#222"}}/>
+              style={{width:"100%",padding:"8px 12px",border:"1px solid #E0E0DC",borderRadius:8,fontSize:13,outline:"none",boxSizing:"border-box",color:"#222",colorScheme:"light"}}/>
           </div>
           <div>
             <label style={{fontSize:11,color:"#666",display:"block",marginBottom:4}}>Date fin</label>
             <input type="date" value={dateFin} onChange={e=>setDateFin(e.target.value)}
-              style={{width:"100%",padding:"8px 12px",border:"1px solid #E0E0DC",borderRadius:8,fontSize:13,outline:"none",boxSizing:"border-box",color:"#222"}}/>
+              style={{width:"100%",padding:"8px 12px",border:"1px solid #E0E0DC",borderRadius:8,fontSize:13,outline:"none",boxSizing:"border-box",color:"#222",colorScheme:"light"}}/>
           </div>
         </div>
         {/* Raccourcis */}
