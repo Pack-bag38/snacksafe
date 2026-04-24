@@ -477,10 +477,10 @@ function PageRapports({ profile }) {
 const dateFinPlusUn = new Date(new Date(dateFinStr).getTime() + 86400000).toISOString().split("T")[0]
 
 const [{ data: tempLogs }, { data: checklogs }, { data: receptions }, { data: actions }] = await Promise.all([
-  supabase.from("temperature_logs").select("*").eq("tenant_id", tenantId).gte("recorded_at", date).lt("recorded_at", dateFinPlusUn),
-  supabase.from("checklist_logs").select("*").eq("tenant_id", tenantId).gte("date", date).lte("date", dateFinStr),
-  supabase.from("receptions").select("*").eq("tenant_id", tenantId).gte("date", date).lte("date", dateFinStr),
-  supabase.from("actions_correctives").select("*").eq("tenant_id", tenantId).gte("date", date).lte("date", dateFinStr),
+  supabase.from("temperature_logs").select("*").eq("tenant_id", tenantId).gte("recorded_at", date).lt("recorded_at", dateFinPlusUn).order("recorded_at", { ascending: true }),
+  supabase.from("checklist_logs").select("*").eq("tenant_id", tenantId).gte("date", date).lte("date", dateFinStr).order("date", { ascending: true }),
+  supabase.from("receptions").select("*").eq("tenant_id", tenantId).gte("date", date).lte("date", dateFinStr).order("date", { ascending: true }),
+  supabase.from("actions_correctives").select("*").eq("tenant_id", tenantId).gte("date", date).lte("date", dateFinStr).order("date", { ascending: true }),
 ])
 
     const doc = new jsPDF()
@@ -493,7 +493,10 @@ const [{ data: tempLogs }, { data: checklogs }, { data: receptions }, { data: ac
     doc.text("SnackSafe", 14, 16)
     doc.setFontSize(11)
     doc.text("Rapport HACCP journalier", 14, 24)
-    doc.text(dateFR, 14, 31)
+const periodLabel = rapport.date_fin && rapport.date_fin !== date
+  ? `Du ${new Date(date).toLocaleDateString("fr-FR")} au ${new Date(rapport.date_fin).toLocaleDateString("fr-FR")}`
+  : dateFR
+doc.text(periodLabel, 14, 31)
 
     doc.setTextColor(0, 0, 0)
     doc.setFontSize(13)
