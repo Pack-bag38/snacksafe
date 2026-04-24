@@ -198,7 +198,7 @@ function PageEquipements({ profile }) {
       .map(eq => {
         const val = parseFloat(saisieValues[eq.id])
         const st = tempStatus(val, eq)
-        return { tenant_id: tenantId, zone: eq.nom, value: val, type: eq.type, is_compliant: st === "bad", recorded_at: new Date().toISOString() }
+        return { tenant_id: tenantId, zone: eq.nom, value: val, type: eq.type, is_compliant: st !== "bad", recorded_at: new Date().toISOString() }
       })
     if (records.length === 0) { setMsg("Saisissez au moins une température"); setSaving(false); return }
     const { error } = await supabase.from("temperature_logs").insert(records)
