@@ -431,7 +431,10 @@ function PageRapports({ profile }) {
   const [generating, setGenerating] = useState(false)
   const [msg, setMsg] = useState("")
   const tenantId = profile?.tenant_id
-  
+  const today = new Date().toISOString().split("T")[0]
+  const [dateDebut, setDateDebut] = useState(today)
+  const [dateFin, setDateFin] = useState(today)
+
   useEffect(() => { if (tenantId) loadRapports() }, [tenantId])
 
   const loadRapports = async () => {
@@ -443,16 +446,22 @@ function PageRapports({ profile }) {
 
   const genererRapport = async () => {
     setGenerating(true)
-    const today = new Date().toISOString().split("T")[0]
-    const { data: logs } = await supabase.from("temperature_logs").select("*").eq("tenant_id", tenantId).gte("recorded_at", today)
+    const dateFinPlusUn = new Date(new Date(dateFin).getTime() + 86400000).toISOString().split("T")[0]
+    const { data: logs } = await supabase.from("temperature_logs").select("*")
+      .eq("tenant_id", tenantId)
+      .gte("recorded_at", dateDebut)
+      .lt("recorded_at", dateFinPlusUn)
     const total = logs?.length || 0
     const conformes = logs?.filter(l => l.is_compliant).length || 0
     const alerts = total - conformes
     const score = total > 0 ? Math.round((conformes / total) * 100) : 0
+    const label = dateDebut === dateFin
+      ? new Date(dateDebut).toLocaleDateString("fr-FR")
+      : `${new Date(dateDebut).toLocaleDateString("fr-FR")} au ${new Date(dateFin).toLocaleDateString("fr-FR")}`
     const { error } = await supabase.from("daily_reports").upsert([{
-      tenant_id: tenantId, report_date: today, score,
+      tenant_id: tenantId, report_date: dateDebut, score,
       checklist_pct: 0, temp_alerts: alerts,
-      summary: `Rapport du ${new Date().toLocaleDateString("fr-FR")} — ${total} relevés, ${conformes} conformes, ${alerts} alertes.`,
+      summary: `Rapport du ${label} — ${total} relevés, ${conformes} conformes, ${alerts} alertes.`,
     }], { onConflict: "tenant_id,report_date" })
     if (error) setMsg("Erreur : " + error.message)
     else { setMsg("✅ Rapport généré !"); loadRapports() }
@@ -461,96 +470,136 @@ function PageRapports({ profile }) {
   }
 
   const exportPDF = async (rapport) => {
-  const date = rapport.report_date
-  const dateFR = new Date(date).toLocaleDateString("fr-FR", {weekday:"long", day:"numeric", month:"long", year:"numeric"})
+    const date = rapport.report_date
+    const dateFR = new Date(date).toLocaleDateString("fr-FR", {weekday:"long", day:"numeric", month:"long", year:"numeric"})
+    const dateFinPlusUn = new Date(new Date(date).getTime() + 86400000).toISOString().split("T")[0]
 
-  const [{ data: tempLogs }, { data: checklogs }, { data: receptions }, { data: actions }] = await Promise.all([
-    supabase.from("temperature_logs").select("*").eq("tenant_id", tenantId).gte("recorded_at", date).lt("recorded_at", new Date(new Date(date).getTime() + 86400000).toISOString().split("T")[0]),
-    supabase.from("checklist_logs").select("*").eq("tenant_id", tenantId).eq("date", date),
-    supabase.from("receptions").select("*").eq("tenant_id", tenantId).eq("date", date),
-    supabase.from("actions_correctives").select("*").eq("tenant_id", tenantId).eq("date", date),
-  ])
+    const [{ data: tempLogs }, { data: checklogs }, { data: receptions }, { data: actions }] = await Promise.all([
+      supabase.from("temperature_logs").select("*").eq("tenant_id", tenantId).gte("recorded_at", date).lt("recorded_at", dateFinPlusUn),
+      supabase.from("checklist_logs").select("*").eq("tenant_id", tenantId).eq("date", date),
+      supabase.from("receptions").select("*").eq("tenant_id", tenantId).eq("date", date),
+      supabase.from("actions_correctives").select("*").eq("tenant_id", tenantId).eq("date", date),
+    ])
 
-  const doc = new jsPDF()
-  let y = 45
+    const doc = new jsPDF()
+    let y = 45
 
-  doc.setFillColor(29, 158, 117)
-  doc.rect(0, 0, 210, 35, "F")
-  doc.setTextColor(255, 255, 255)
-  doc.setFontSize(22)
-  doc.text("SnackSafe", 14, 16)
-  doc.setFontSize(11)
-  doc.text("Rapport HACCP journalier", 14, 24)
-  doc.text(dateFR, 14, 31)
+    doc.setFillColor(29, 158, 117)
+    doc.rect(0, 0, 210, 35, "F")
+    doc.setTextColor(255, 255, 255)
+    doc.setFontSize(22)
+    doc.text("SnackSafe", 14, 16)
+    doc.setFontSize(11)
+    doc.text("Rapport HACCP journalier", 14, 24)
+    doc.text(dateFR, 14, 31)
 
-  doc.setTextColor(0, 0, 0)
-  doc.setFontSize(13)
-  doc.setFillColor(240, 248, 244)
-  doc.rect(14, y-6, 182, 12, "F")
-  doc.text(`Score global : ${rapport.score}/100`, 16, y)
-  y += 14
-
-  const section = (titre) => {
-    doc.setFontSize(12)
-    doc.setTextColor(29, 158, 117)
-    doc.text(titre, 14, y)
-    y += 7
     doc.setTextColor(0, 0, 0)
-    doc.setFontSize(10)
+    doc.setFontSize(13)
+    doc.setFillColor(240, 248, 244)
+    doc.rect(14, y-6, 182, 12, "F")
+    doc.text(`Score global : ${rapport.score}/100`, 16, y)
+    y += 14
+
+    const section = (titre) => {
+      doc.setFontSize(12)
+      doc.setTextColor(29, 158, 117)
+      doc.text(titre, 14, y)
+      y += 7
+      doc.setTextColor(0, 0, 0)
+      doc.setFontSize(10)
+    }
+
+    section("Relevés de température")
+    if (tempLogs?.length > 0) {
+      tempLogs.forEach(l => {
+        const h = new Date(l.recorded_at).toLocaleTimeString("fr-FR", {hour:"2-digit", minute:"2-digit"})
+        doc.text(`• ${l.zone} : ${l.value}°C — ${l.is_compliant ? "Conforme" : "Non conforme"} (${h})`, 16, y)
+        y += 6; if (y > 275) { doc.addPage(); y = 20 }
+      })
+    } else { doc.text("Aucun relevé", 16, y); y += 6 }
+    y += 4
+
+    section("Checklist")
+    const checkedCount = checklogs?.filter(c => c.is_checked).length || 0
+    doc.text(`Tâches complétées : ${checkedCount}/${checklogs?.length || 0}`, 16, y); y += 6
+    y += 4
+
+    section("Réceptions marchandises")
+    if (receptions?.length > 0) {
+      receptions.forEach(r => {
+        doc.text(`• ${r.produit} (${r.fournisseur}) — ${r.statut === "accepte" ? "Accepté" : r.statut === "refuse" ? "Refusé" : "Réserve"}`, 16, y)
+        y += 6; if (y > 275) { doc.addPage(); y = 20 }
+      })
+    } else { doc.text("Aucune réception", 16, y); y += 6 }
+    y += 4
+
+    section("Actions correctives")
+    if (actions?.length > 0) {
+      actions.forEach(a => {
+        doc.text(`• ${a.description} — ${a.statut}`, 16, y)
+        y += 6; if (y > 275) { doc.addPage(); y = 20 }
+      })
+    } else { doc.text("Aucune action corrective", 16, y); y += 6 }
+
+    const pageCount = doc.getNumberOfPages()
+    for (let i = 1; i <= pageCount; i++) {
+      doc.setPage(i)
+      doc.setFontSize(8)
+      doc.setTextColor(150, 150, 150)
+      doc.text("Généré par SnackSafe", 14, 290)
+      doc.text(`Page ${i}/${pageCount}`, 185, 290)
+    }
+
+    doc.save(`rapport-haccp-${date}.pdf`)
   }
 
-  section("Relevés de température")
-  if (tempLogs?.length > 0) {
-    tempLogs.forEach(l => {
-      const h = new Date(l.recorded_at).toLocaleTimeString("fr-FR", {hour:"2-digit", minute:"2-digit"})
-      doc.text(`• ${l.zone} : ${l.value}°C — ${l.is_compliant ? "Conforme" : "Non conforme"} (${h})`, 16, y)
-      y += 6; if (y > 275) { doc.addPage(); y = 20 }
-    })
-  } else { doc.text("Aucun relevé", 16, y); y += 6 }
-  y += 4
-
-  section("Checklist")
-  const checkedCount = checklogs?.filter(c => c.is_checked).length || 0
-  doc.text(`Tâches complétées : ${checkedCount}/${checklogs?.length || 0}`, 16, y); y += 6
-  y += 4
-
-  section("Réceptions marchandises")
-  if (receptions?.length > 0) {
-    receptions.forEach(r => {
-      doc.text(`• ${r.produit} (${r.fournisseur}) — ${r.statut === "accepte" ? "Accepté" : r.statut === "refuse" ? "Refusé" : "Réserve"}`, 16, y)
-      y += 6; if (y > 275) { doc.addPage(); y = 20 }
-    })
-  } else { doc.text("Aucune réception", 16, y); y += 6 }
-  y += 4
-
-  section("Actions correctives")
-  if (actions?.length > 0) {
-    actions.forEach(a => {
-      doc.text(`• ${a.description} — ${a.statut}`, 16, y)
-      y += 6; if (y > 275) { doc.addPage(); y = 20 }
-    })
-  } else { doc.text("Aucune action corrective", 16, y); y += 6 }
-
-  const pageCount = doc.getNumberOfPages()
-  for (let i = 1; i <= pageCount; i++) {
-    doc.setPage(i)
-    doc.setFontSize(8)
-    doc.setTextColor(150, 150, 150)
-    doc.text("Généré par SnackSafe", 14, 290)
-    doc.text(`Page ${i}/${pageCount}`, 185, 290)
-  }
-
-  doc.save(`rapport-haccp-${date}.pdf`)
-}
   const scoreColor = (s) => s >= 80 ? "ok" : s >= 60 ? "warn" : "bad"
 
   return (
     <div>
       <div style={{fontSize:13,color:"#888",marginBottom:16}}>Rapports journaliers</div>
       {msg && <div style={{padding:"10px 14px",background:msg.includes("✅")?"#E1F5EE":"#FCEBEB",color:msg.includes("✅")?"#085041":"#501313",borderRadius:8,marginBottom:12,fontSize:13}}>{msg}</div>}
-      <button onClick={genererRapport} disabled={generating} style={{width:"100%",marginBottom:16,padding:14,background:"#1D9E75",color:"#fff",border:"none",borderRadius:12,fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
-        {generating ? "Génération..." : "📊 Générer le rapport du jour"}
+
+      {/* Sélecteur de période */}
+      <div style={{background:"#fff",border:"0.5px solid #E8E8E4",borderRadius:12,padding:16,marginBottom:12}}>
+        <div style={{fontSize:13,fontWeight:700,color:"#222",marginBottom:12}}>📅 Période du rapport</div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:12}}>
+          <div>
+            <label style={{fontSize:11,color:"#666",display:"block",marginBottom:4}}>Date début</label>
+            <input type="date" value={dateDebut} onChange={e=>setDateDebut(e.target.value)}
+              style={{width:"100%",padding:"8px 12px",border:"1px solid #E0E0DC",borderRadius:8,fontSize:13,outline:"none",boxSizing:"border-box",color:"#222"}}/>
+          </div>
+          <div>
+            <label style={{fontSize:11,color:"#666",display:"block",marginBottom:4}}>Date fin</label>
+            <input type="date" value={dateFin} onChange={e=>setDateFin(e.target.value)}
+              style={{width:"100%",padding:"8px 12px",border:"1px solid #E0E0DC",borderRadius:8,fontSize:13,outline:"none",boxSizing:"border-box",color:"#222"}}/>
+          </div>
+        </div>
+        {/* Raccourcis */}
+        <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+          {[
+            ["Aujourd'hui", 0, 0],
+            ["7 derniers jours", 6, 0],
+            ["30 derniers jours", 29, 0],
+          ].map(([label, daysBack, daysEnd]) => (
+            <button key={label} onClick={() => {
+              const fin = new Date()
+              const debut = new Date()
+              debut.setDate(debut.getDate() - daysBack)
+              setDateDebut(debut.toISOString().split("T")[0])
+              setDateFin(fin.toISOString().split("T")[0])
+            }} style={{padding:"6px 12px",background:"#F0F0EC",color:"#444",border:"none",borderRadius:20,cursor:"pointer",fontFamily:"inherit",fontSize:11,fontWeight:600}}>
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <button onClick={genererRapport} disabled={generating}
+        style={{width:"100%",marginBottom:16,padding:14,background:"#1D9E75",color:"#fff",border:"none",borderRadius:12,fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
+        {generating ? "Génération..." : "📊 Générer le rapport"}
       </button>
+
       {loading ? <div style={{color:"#888",fontSize:13,textAlign:"center",padding:20}}>Chargement...</div> :
         rapports.length === 0 ? (
           <div style={{background:"#fff",border:"0.5px solid #E8E8E4",borderRadius:12,padding:24,textAlign:"center"}}>
@@ -573,8 +622,8 @@ function PageRapports({ profile }) {
                       <Tag color={st==="ok"?"green":st==="warn"?"amber":"red"}>Score : {r.score || 0}/100</Tag>
                     </div>
                     <button onClick={()=>exportPDF(r)} style={{marginTop:8,padding:"4px 12px",background:"#E6F1FB",color:"#042C53",border:"none",borderRadius:6,cursor:"pointer",fontFamily:"inherit",fontSize:11,fontWeight:600}}>
-  📄 Exporter PDF
-</button>
+                      📄 Exporter PDF
+                    </button>
                   </div>
                 </div>
               </div>
