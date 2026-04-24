@@ -1132,7 +1132,7 @@ function PageReception({ profile }) {
 
   const tenantId = profile?.tenant_id || profile?.id
   const [form, setForm] = useState({
-    fournisseur_id: "", fournisseur: "", produit: "", temperature: "",
+   fournisseur_id: "", fournisseur: "", produit: "", type_produit: "frais", temperature: "",
     dlc: "", aspect_visuel: "conforme", origine: "",
     numero_lot: "", etiquetage_conforme: true,
     stockage_separe: true, statut: "accepte",
@@ -1239,7 +1239,11 @@ console.log("fournisseurs error =", error)
     if (!form.fournisseur || !form.produit) { setMsg("Fournisseur et produit obligatoires"); return }
     setSaving(true)
     const temp = form.temperature ? parseFloat(form.temperature) : null
-    const temp_conforme = temp !== null ? temp <= 4 : null
+    const temp_conforme = temp !== null ? (
+  form.type_produit === "frais" ? temp >= 0 && temp <= 4 :
+  form.type_produit === "congele" ? temp <= -18 :
+  true
+) : null
     const dlc_conforme = form.dlc ? new Date(form.dlc) >= new Date() : null
     const { error } = await supabase.from("receptions").insert([{
       tenant_id: tenantId,
@@ -1391,6 +1395,15 @@ console.log("fournisseurs error =", error)
             ⚠️ Aucun article pour ce fournisseur — ajoutez-en dans Référentiel
           </div>}
         </div>
+        <div style={{marginBottom:10}}>
+  <label style={{fontSize:11,color:"#666",display:"block",marginBottom:4}}>Type de produit</label>
+  <select value={form.type_produit} onChange={e=>setForm(p=>({...p,type_produit:e.target.value}))}
+    style={{width:"100%",padding:"8px 12px",border:"1px solid #E0E0DC",borderRadius:8,fontSize:13,outline:"none",background:"#fff",color:"#222"}}>
+    <option value="frais" style={{color:"#222"}}>🥶 Frais (0°C à 4°C)</option>
+    <option value="congele" style={{color:"#222"}}>❄️ Congelé (-18°C ou moins)</option>
+    <option value="sec" style={{color:"#222"}}>📦 Sec (ambiante)</option>
+  </select>
+</div>
 
         {[["Température (°C)","temperature","number"],["DLC / DDM","dlc","date"]].map(([label,key,type]) =>
           <div key={key} style={{marginBottom:10}}>
