@@ -515,13 +515,25 @@ doc.text(periodLabel, 14, 31)
     }
 
     section("Relevés de température")
-    if (tempLogs?.length > 0) {
-      tempLogs.forEach(l => {
-        const h = new Date(l.recorded_at).toLocaleTimeString("fr-FR", {hour:"2-digit", minute:"2-digit"})
-        doc.text(`• ${l.zone} : ${l.value}°C — ${l.is_compliant ? "Conforme" : "Non conforme"} (${h})`, 16, y)
-        y += 6; if (y > 275) { doc.addPage(); y = 20 }
-      })
-    } else { doc.text("Aucun relevé", 16, y); y += 6 }
+if (tempLogs?.length > 0) {
+  const grouped = {}
+  tempLogs.forEach(l => {
+    const day = new Date(l.recorded_at).toLocaleDateString("fr-FR", {weekday:"long", day:"numeric", month:"long"})
+    if (!grouped[day]) grouped[day] = []
+    grouped[day].push(l)
+  })
+  Object.entries(grouped).forEach(([day, logs]) => {
+    doc.setFontSize(10)
+    doc.setTextColor(100, 100, 100)
+    doc.text(`── ${day} ──`, 16, y); y += 6
+    doc.setTextColor(0, 0, 0)
+    logs.forEach(l => {
+      const h = new Date(l.recorded_at).toLocaleTimeString("fr-FR", {hour:"2-digit", minute:"2-digit"})
+      doc.text(`• ${l.zone} : ${l.value}°C — ${l.is_compliant ? "Conforme" : "Non conforme"} (${h})`, 16, y)
+      y += 6; if (y > 275) { doc.addPage(); y = 20 }
+    })
+  })
+} else { doc.text("Aucun relevé", 16, y); y += 6 }
     y += 4
 
     section("Checklist")
