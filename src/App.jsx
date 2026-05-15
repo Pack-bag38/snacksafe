@@ -346,88 +346,116 @@ function PageEquipements({ profile }) {
   )
 }
 function NotificationSettings() {
-  const EQUIPEMENTS = [
-    { key: "temperatures", label: "🌡️ Températures", desc: "Rappel de relevé de températures" },
-    { key: "checklist", label: "✅ Checklist", desc: "Rappel ouverture/fermeture" },
-    { key: "reception", label: "📦 Réception", desc: "Rappel contrôle réception" },
-    { key: "chaud", label: "🔥 Maintien au chaud", desc: "Rappel contrôle températures chaudes" },
-    { key: "froid", label: "❄️ Refroidissement", desc: "Rappel suivi refroidissement" },
-    { key: "actions", label: "⚠️ Actions correctives", desc: "Rappel traitement des actions" },
-  ]
-
-  const [actifs, setActifs] = useState({})
+  const [enabled, setEnabled] = useState(false)
   const [heure, setHeure] = useState("08:00")
+  const [jours, setJours] = useState([1,2,3,4,5])
   const [msg, setMsg] = useState("")
 
-  useEffect(() => {
-    const savedActifs = localStorage.getItem("notif_equipements")
-    const savedHeure = localStorage.getItem("notif_heure")
-    if (savedActifs) setActifs(JSON.parse(savedActifs))
-    if (savedHeure) setHeure(savedHeure)
-  }, [])
+  const JOURS = ["Dim","Lun","Mar","Mer","Jeu","Ven","Sam"]
 
-  const toggleEquipement = (key) => {
-    setActifs(prev => {
-      const updated = { ...prev, [key]: !prev[key] }
-      localStorage.setItem("notif_equipements", JSON.stringify(updated))
-      return updated
-    })
+  const toggleJour = (j) => {
+    setJours(p => p.includes(j) ? p.filter(x => x !== j) : [...p, j])
   }
 
-  const sauvegarderHeure = () => {
+  const sauvegarder = () => {
+    if (!enabled) { Notification.requestPermission(); setEnabled(true) }
     localStorage.setItem("notif_heure", heure)
-    setMsg("✅ Heure de rappel sauvegardée !")
+    localStorage.setItem("notif_jours", JSON.stringify(jours))
+    localStorage.setItem("notif_enabled", "true")
+    setMsg("✅ Rappels configurés !")
     setTimeout(() => setMsg(""), 2500)
   }
 
-  const nbActifs = Object.values(actifs).filter(Boolean).length
+  const desactiver = () => {
+    localStorage.removeItem("notif_enabled")
+    setEnabled(false)
+    setMsg("🔕 Notifications désactivées")
+    setTimeout(() => setMsg(""), 2500)
+  }
+
+  useEffect(() => {
+  const saved = localStorage.getItem("notif_enabled")
+  const savedHeure = localStorage.getItem("notif_heure")
+  const savedJours = localStorage.getItem("notif_jours")
+  if (saved) setEnabled(true)
+  if (savedHeure) setHeure(savedHeure)
+  if (savedJours) setJours(JSON.parse(savedJours))
+  // Service worker supprimé — pas de notification push pour l'instant
+}, [])
 
   return (
     <div style={{background:"#fff",border:"0.5px solid #E8E8E4",borderRadius:12,padding:20,marginBottom:16}}>
-      <div style={{fontSize:13,fontWeight:700,color:"#222",marginBottom:4}}>🔔 Notifications par module</div>
-      <div style={{fontSize:11,color:"#888",marginBottom:12}}>
-        Activez les rappels pour chaque module • {nbActifs} module{nbActifs !== 1 ? "s" : ""} actif{nbActifs !== 1 ? "s" : ""}
-      </div>
+      <div style={{fontSize:13,fontWeight:700,color:"#222",marginBottom:4}}>🔔 Rappels quotidiens</div>
+      <div style={{fontSize:11,color:"#F59E0B",marginBottom:12}}>⚠️ Fonctionne uniquement si l'app est ouverte ou en arrière-plan</div>
 
-      {msg && <div style={{padding:"8px 12px",background:"#E1F5EE",color:"#085041",borderRadius:8,marginBottom:12,fontSize:12}}>{msg}</div>}
+      {msg && <div style={{padding:"8px 12px",background:msg.includes("✅")?"#E1F5EE":"#FEF3C7",color:msg.includes("✅")?"#085041":"#92400E",borderRadius:8,marginBottom:12,fontSize:12}}>{msg}</div>}
+
+      <div style={{marginBottom:12}}>
+        <label style={{fontSize:11,color:"#666",display:"block",marginBottom:4}}>🕐 Heure du rappel</label>
+        <input type="time" value={heure} onChange={e=>setHeure(e.target.value)}
+          style={{padding:"8px 12px",border:"1px solid #E0E0DC",borderRadius:8,fontSize:13,outline:"none",color:"#222"}}/>
+      </div>
 
       <div style={{marginBottom:16}}>
-        {EQUIPEMENTS.map(eq => (
-          <div key={eq.key} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 0",borderBottom:"0.5px solid #F0F0EC"}}>
-            <div>
-              <div style={{fontSize:12,fontWeight:600,color:"#222"}}>{eq.label}</div>
-              <div style={{fontSize:11,color:"#888"}}>{eq.desc}</div>
-            </div>
-            <div onClick={() => toggleEquipement(eq.key)}
-              style={{width:44,height:24,borderRadius:12,cursor:"pointer",transition:"background 0.2s",
-                background:actifs[eq.key] ? "#1D9E75" : "#E0E0DC",
-                position:"relative",flexShrink:0}}>
-              <div style={{position:"absolute",top:2,
-                left:actifs[eq.key] ? 22 : 2,
-                width:20,height:20,borderRadius:10,background:"#fff",
-                transition:"left 0.2s",boxShadow:"0 1px 3px rgba(0,0,0,0.2)"}}/>
-            </div>
-          </div>
-        ))}
+        <label style={{fontSize:11,color:"#666",display:"block",marginBottom:8}}>📅 Jours actifs</label>
+        <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+          {JOURS.map((j,i) => (
+            <button key={i} onClick={()=>toggleJour(i)}
+              style={{padding:"6px 10px",borderRadius:20,border:"none",cursor:"pointer",
+                fontFamily:"inherit",fontSize:11,fontWeight:600,
+                background:jours.includes(i)?"#1D9E75":"#F0F0EC",
+                color:jours.includes(i)?"#fff":"#666"}}>
+              {j}
+            </button>
+          ))}
+        </div>
       </div>
 
-      <div style={{display:"flex",alignItems:"center",gap:10}}>
-        <div>
-          <label style={{fontSize:11,color:"#666",display:"block",marginBottom:4}}>🕐 Heure des rappels</label>
-          <input type="time" value={heure} onChange={e=>setHeure(e.target.value)}
-            style={{padding:"8px 12px",border:"1px solid #E0E0DC",borderRadius:8,fontSize:13,outline:"none",color:"#222"}}/>
-        </div>
-        <button onClick={sauvegarderHeure}
-          style={{marginTop:16,padding:"8px 16px",background:"#1D9E75",color:"#fff",border:"none",borderRadius:8,cursor:"pointer",fontFamily:"inherit",fontSize:12,fontWeight:600}}>
-          💾 Sauvegarder
+      <div style={{display:"flex",gap:8}}>
+        <button onClick={sauvegarder}
+          style={{padding:"8px 16px",background:"#1D9E75",color:"#fff",border:"none",borderRadius:8,cursor:"pointer",fontFamily:"inherit",fontSize:12,fontWeight:600}}>
+          🔔 Activer
         </button>
+        {enabled && <button onClick={desactiver}
+          style={{padding:"8px 16px",background:"#fff",color:"#666",border:"1px solid #E0E0DC",borderRadius:8,cursor:"pointer",fontFamily:"inherit",fontSize:12}}>
+          🔕 Désactiver
+        </button>}
       </div>
     </div>
   )
 }
-
 function PageParametres({ profile }) {
+  const [pin, setPin] = useState(profile?.rapport_pin || "")
+  const [msg, setMsg] = useState("")
+  const [saving, setSaving] = useState(false)
+
+  const savePin = async () => {
+    if (pin && pin.length !== 4) { setMsg("Le PIN doit contenir 4 chiffres"); return }
+    setSaving(true)
+    const { error } = await supabase.from("profiles")
+      .update({ rapport_pin: pin || null })
+      .eq("id", profile.id)
+    if (error) setMsg("Erreur : " + error.message)
+    else setMsg("✅ PIN mis à jour !")
+    setSaving(false)
+    setTimeout(() => setMsg(""), 3000)
+  }
+
   return <div>
+    <div style={{background:"#fff",border:"0.5px solid #E8E8E4",borderRadius:12,padding:20,marginBottom:16}}>
+      <div style={{fontSize:13,fontWeight:700,color:"#222",marginBottom:4}}>🔒 Code PIN Rapports</div>
+      <div style={{fontSize:11,color:"#888",marginBottom:16}}>Protège l'accès à la page Rapports avec un code à 4 chiffres</div>
+      <label style={{fontSize:11,color:"#666",display:"block",marginBottom:4}}>Code PIN (4 chiffres)</label>
+      <input type="password" maxLength={4} value={pin} onChange={e=>setPin(e.target.value)}
+        placeholder="••••"
+        style={{width:"100%",padding:"10px 12px",border:"1px solid #E0E0DC",borderRadius:8,fontSize:18,outline:"none",boxSizing:"border-box",letterSpacing:8,textAlign:"center",marginBottom:8}}/>
+      <div style={{fontSize:11,color:"#aaa",marginBottom:12}}>Laissez vide pour désactiver le PIN</div>
+      {msg && <div style={{padding:"8px 12px",background:msg.includes("✅")?"#E1F5EE":"#FCEBEB",color:msg.includes("✅")?"#085041":"#501313",borderRadius:8,marginBottom:12,fontSize:12}}>{msg}</div>}
+      <button onClick={savePin} disabled={saving}
+        style={{width:"100%",padding:12,background:"#1D9E75",color:"#fff",border:"none",borderRadius:8,cursor:"pointer",fontFamily:"inherit",fontSize:13,fontWeight:600}}>
+        {saving ? "Enregistrement..." : "💾 Sauvegarder le PIN"}
+      </button>
+    </div>
     <NotificationSettings />
 
     <div style={{background:"#fff",border:"0.5px solid #E8E8E4",borderRadius:12,padding:20}}>
@@ -761,13 +789,11 @@ function ClientApp({ session, profile, onLogout }) {
   const [page, setPage] = useState("dashboard")
   const [pinOk, setPinOk] = useState(false)
 const [pinInput, setPinInput] = useState("")
-  const NAV_ROW1 = [
+  const NAV = [
   {id:"dashboard",icon:"🏠",label:"Accueil"},
   {id:"equipements",icon:"🌡️",label:"Temp."},
   {id:"checklist",icon:"✅",label:"Checklist"},
   {id:"rapports",icon:"📊",label:"Rapports"},
-]
-const NAV_ROW2 = [
   {id:"parametres",icon:"⚙️",label:"Paramètres"},
   {id:"reception",icon:"📦",label:"Réception"},
   {id:"maintien",icon:"🔥",label:"Chaud"},
@@ -817,18 +843,12 @@ const NAV_ROW2 = [
         {page==="actions" && <PageActionsCorrectives profile={profile}/>}
       </div>
       <div style={{position:"fixed",bottom:0,left:"50%",transform:"translateX(-50%)",width:"100%",maxWidth:460,background:"#fff",borderTop:"0.5px solid #E8E8E4"}}>
-  <div style={{display:"flex"}}>
-    {NAV_ROW1.map(n => <button key={n.id} onClick={()=>setPage(n.id)} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:3,padding:"6px 2px",border:"none",borderBottom:"0.5px solid #E8E8E4",cursor:"pointer",fontFamily:"inherit",background:"transparent"}}>
+  <div style={{display:"flex",overflowX:"auto"}}>
+    {NAV.map(n => <button key={n.id} onClick={()=>setPage(n.id)} style={{flex:"0 0 auto",display:"flex",flexDirection:"column",alignItems:"center",gap:3,padding:"8px 14px",border:"none",cursor:"pointer",fontFamily:"inherit",background:"transparent",borderTop: page===n.id?"2px solid #1D9E75":"2px solid transparent"}}>
       <span style={{fontSize:18}}>{n.icon}</span>
-      <span style={{fontSize:9,color:page===n.id?"#0F6E56":"#888",fontWeight:page===n.id?600:400}}>{n.label}</span>
+      <span style={{fontSize:9,color:page===n.id?"#1D9E75":"#888",fontWeight:page===n.id?600:400}}>{n.label}</span>
     </button>)}
   </div>
-  <div style={{display:"flex"}}>
-    {NAV_ROW2.map(n => <button key={n.id} onClick={()=>setPage(n.id)} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:3,padding:"6px 2px",border:"none",cursor:"pointer",fontFamily:"inherit",background:"transparent"}}>
-      <span style={{fontSize:18}}>{n.icon}</span>
-      <span style={{fontSize:9,color:page===n.id?"#0F6E56":"#888",fontWeight:page===n.id?600:400}}>{n.label}</span>
-    </button>)}
-</div>
   </div>
   </div>
 )
@@ -845,38 +865,62 @@ function PageDashboard({ setPage, profile }) {
     }
   }, [tenantId])
 
+  const hour = new Date().getHours()
+  const greeting = hour < 12 ? "Bonjour" : hour < 18 ? "Bon après-midi" : "Bonsoir"
   const today = new Date().toLocaleDateString("fr-FR",{weekday:"long",day:"numeric",month:"long"})
+
+  const MODULES = [
+    {id:"equipements", label:"Températures", icon:"📊", bg:"#E8534A"},
+    {id:"checklist", label:"Checklist", icon:"✅", bg:"#1D9E75"},
+    {id:"reception", label:"Réception", icon:"📦", bg:"#9B59B6"},
+    {id:"maintien", label:"Chaud", icon:"🔥", bg:"#E67E22"},
+    {id:"refroidissement", label:"Froid", icon:"❄️", bg:"#3498DB"},
+    {id:"actions", label:"Actions", icon:"⚠️", bg:"#F1C40F"},
+    {id:"rapports", label:"Rapports", icon:"📋", bg:"#27AE60"},
+    {id:"reglementation", label:"Règlement.", icon:"📖", bg:"#E74C3C"},
+    {id:"parametres", label:"Paramètres", icon:"⚙️", bg:"#2ECC71"},
+  ]
+
   return (
     <div>
-      <div style={{fontSize:12,color:"#888",marginBottom:16,textTransform:"capitalize"}}>{today}</div>
-      {todayAlerts.length > 0 && <div style={{marginBottom:16}}>
+      <div style={{textAlign:"center",padding:"16px 0 20px"}}>
+        <div style={{fontSize:20,fontWeight:700,color:"#1a1a1a"}}>{greeting} 👋</div>
+        <div style={{fontSize:12,color:"#888",marginTop:4,textTransform:"capitalize"}}>{today}</div>
+      </div>
+
+      {todayAlerts.length > 0 && <div style={{marginBottom:12}}>
         {todayAlerts.map((a,i) => <div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 14px",background:"#FCEBEB",borderLeft:"3px solid #E24B4A",borderRadius:8,marginBottom:6}}>
           <span style={{fontSize:14}}>🚨</span>
-          <span style={{fontSize:12,color:"#A32D2D",fontWeight:500}}>{a.zone} : {a.value}°C — Non conforme</span>
+          <span style={{fontSize:12,color:"#A32D2D",fontWeight:500}}>{a.zone} : {a.value}°C · Non conforme · Action requise</span>
         </div>)}
       </div>}
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:16}}>
+
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10,marginBottom:20}}>
         {[
-          {label:"Alertes aujourd'hui",val:todayAlerts.length,sub:"températures non conformes",color:todayAlerts.length>0?"#A32D2D":"#0F6E56"},
-          {label:"CCP conformes",val:`${HACCP_POINTS.filter(h=>h.status==="ok").length}/${HACCP_POINTS.length}`,sub:"Points critiques",color:"#0F6E56"},
-          {label:"Dernière inspection",val:"OK",sub:"Il y a 12 jours",color:"#185FA5"},
-          {label:"Formation requise",val:"Non",sub:"Tous formés",color:"#0F6E56"},
-        ].map((k,i) => <div key={i} style={{background:"#fff",border:"0.5px solid #E8E8E4",borderRadius:12,padding:"14px 16px"}}>
-          <div style={{fontSize:11,color:"#888",marginBottom:6}}>{k.label}</div>
-          <div style={{fontSize:22,fontWeight:700,color:k.color}}>{k.val}</div>
-          <div style={{fontSize:11,color:"#aaa",marginTop:2}}>{k.sub}</div>
+          {label:"Alertes",val:todayAlerts.length,icon:"🚨",color:"#E8534A",bg:"#FCEBEB"},
+          {label:"CCP ok",val:`${HACCP_POINTS.filter(h=>h.status==="ok").length}/${HACCP_POINTS.length}`,icon:"✅",color:"#1D9E75",bg:"#E1F5EE"},
+          {label:"Formation",val:"100%",icon:"🎓",color:"#534AB7",bg:"#EEEDFE"},
+        ].map((k,i) => <div key={i} style={{background:k.bg,borderRadius:12,padding:"12px 10px",textAlign:"center"}}>
+          <div style={{fontSize:20,marginBottom:4}}>{k.icon}</div>
+          <div style={{fontSize:18,fontWeight:700,color:k.color}}>{k.val}</div>
+          <div style={{fontSize:10,color:"#888",marginTop:2}}>{k.label}</div>
         </div>)}
       </div>
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
-        {[
-          {label:"Saisir températures",icon:"🌡️",page:"equipements",bg:"#E6F1FB",color:"#042C53"},
-          {label:"Checklist",icon:"✅",page:"checklist",bg:"#E1F5EE",color:"#085041"},
-          {label:"Réglementation",icon:"📋",page:"reglementation",bg:"#EEEDFE",color:"#26215C"},
-          {label:"Rapports",icon:"📊",page:"rapports",bg:"#FAEEDA",color:"#412402"},
-        ].map((q,i) => <button key={i} onClick={()=>setPage(q.page)} style={{background:q.bg,border:"none",borderRadius:10,padding:"14px 16px",textAlign:"left",cursor:"pointer",fontFamily:"inherit"}}>
-          <div style={{fontSize:20,marginBottom:6}}>{q.icon}</div>
-          <div style={{fontSize:12,fontWeight:600,color:q.color}}>{q.label}</div>
-        </button>)}
+
+      <div style={{fontSize:13,fontWeight:700,color:"#222",marginBottom:12,textAlign:"center"}}>Modules</div>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10}}>
+        {MODULES.map((m,i) => (
+          <button key={i} onClick={()=>setPage(m.id)}
+            style={{background:m.bg,border:"none",borderRadius:16,padding:"18px 8px",cursor:"pointer",fontFamily:"inherit",display:"flex",flexDirection:"column",alignItems:"center",gap:6}}>
+            <span style={{fontSize:24}}>{m.icon}</span>
+            <span style={{fontSize:11,fontWeight:600,color:"#fff"}}>{m.label}</span>
+          </button>
+        ))}
+      </div>
+
+      <div style={{marginTop:20,background:"#fff",border:"0.5px solid #E8E8E4",borderRadius:12,padding:16}}>
+        <div style={{fontSize:12,fontWeight:600,color:"#222",marginBottom:8}}>📋 Dernière activité</div>
+        <div style={{fontSize:12,color:"#aaa"}}>Aucune activité récente</div>
       </div>
     </div>
   )
