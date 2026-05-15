@@ -808,14 +808,6 @@ const [pinInput, setPinInput] = useState("")
         {page==="refroidissement" && <PageRefroidissement profile={profile}/>}
         {page==="actions" && <PageActionsCorrectives profile={profile}/>}
       </div>
-      <div style={{position:"fixed",bottom:0,left:"50%",transform:"translateX(-50%)",width:"100%",maxWidth:460,background:"#fff",borderTop:"0.5px solid #E8E8E4"}}>
-  <div style={{display:"flex",overflowX:"auto"}}>
-    {NAV.map(n => <button key={n.id} onClick={()=>setPage(n.id)} style={{flex:"0 0 auto",display:"flex",flexDirection:"column",alignItems:"center",gap:3,padding:"8px 14px",border:"none",cursor:"pointer",fontFamily:"inherit",background:"transparent",borderTop: page===n.id?"2px solid #1D9E75":"2px solid transparent"}}>
-      <span style={{fontSize:18}}>{n.icon}</span>
-      <span style={{fontSize:9,color:page===n.id?"#1D9E75":"#888",fontWeight:page===n.id?600:400}}>{n.label}</span>
-    </button>)}
-  </div>
-  </div>
   </div>
 )
 }
