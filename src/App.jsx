@@ -346,116 +346,88 @@ function PageEquipements({ profile }) {
   )
 }
 function NotificationSettings() {
-  const [enabled, setEnabled] = useState(false)
+  const EQUIPEMENTS = [
+    { key: "temperatures", label: "🌡️ Températures", desc: "Rappel de relevé de températures" },
+    { key: "checklist", label: "✅ Checklist", desc: "Rappel ouverture/fermeture" },
+    { key: "reception", label: "📦 Réception", desc: "Rappel contrôle réception" },
+    { key: "chaud", label: "🔥 Maintien au chaud", desc: "Rappel contrôle températures chaudes" },
+    { key: "froid", label: "❄️ Refroidissement", desc: "Rappel suivi refroidissement" },
+    { key: "actions", label: "⚠️ Actions correctives", desc: "Rappel traitement des actions" },
+  ]
+
+  const [actifs, setActifs] = useState({})
   const [heure, setHeure] = useState("08:00")
-  const [jours, setJours] = useState([1,2,3,4,5])
   const [msg, setMsg] = useState("")
 
-  const JOURS = ["Dim","Lun","Mar","Mer","Jeu","Ven","Sam"]
-
-  const toggleJour = (j) => {
-    setJours(p => p.includes(j) ? p.filter(x => x !== j) : [...p, j])
-  }
-
-  const sauvegarder = () => {
-    if (!enabled) { Notification.requestPermission(); setEnabled(true) }
-    localStorage.setItem("notif_heure", heure)
-    localStorage.setItem("notif_jours", JSON.stringify(jours))
-    localStorage.setItem("notif_enabled", "true")
-    setMsg("✅ Rappels configurés !")
-    setTimeout(() => setMsg(""), 2500)
-  }
-
-  const desactiver = () => {
-    localStorage.removeItem("notif_enabled")
-    setEnabled(false)
-    setMsg("🔕 Notifications désactivées")
-    setTimeout(() => setMsg(""), 2500)
-  }
-
   useEffect(() => {
-  const saved = localStorage.getItem("notif_enabled")
-  const savedHeure = localStorage.getItem("notif_heure")
-  const savedJours = localStorage.getItem("notif_jours")
-  if (saved) setEnabled(true)
-  if (savedHeure) setHeure(savedHeure)
-  if (savedJours) setJours(JSON.parse(savedJours))
-  // Service worker supprimé — pas de notification push pour l'instant
-}, [])
+    const savedActifs = localStorage.getItem("notif_equipements")
+    const savedHeure = localStorage.getItem("notif_heure")
+    if (savedActifs) setActifs(JSON.parse(savedActifs))
+    if (savedHeure) setHeure(savedHeure)
+  }, [])
+
+  const toggleEquipement = (key) => {
+    setActifs(prev => {
+      const updated = { ...prev, [key]: !prev[key] }
+      localStorage.setItem("notif_equipements", JSON.stringify(updated))
+      return updated
+    })
+  }
+
+  const sauvegarderHeure = () => {
+    localStorage.setItem("notif_heure", heure)
+    setMsg("✅ Heure de rappel sauvegardée !")
+    setTimeout(() => setMsg(""), 2500)
+  }
+
+  const nbActifs = Object.values(actifs).filter(Boolean).length
 
   return (
     <div style={{background:"#fff",border:"0.5px solid #E8E8E4",borderRadius:12,padding:20,marginBottom:16}}>
-      <div style={{fontSize:13,fontWeight:700,color:"#222",marginBottom:4}}>🔔 Rappels quotidiens</div>
-      <div style={{fontSize:11,color:"#F59E0B",marginBottom:12}}>⚠️ Fonctionne uniquement si l'app est ouverte ou en arrière-plan</div>
-
-      {msg && <div style={{padding:"8px 12px",background:msg.includes("✅")?"#E1F5EE":"#FEF3C7",color:msg.includes("✅")?"#085041":"#92400E",borderRadius:8,marginBottom:12,fontSize:12}}>{msg}</div>}
-
-      <div style={{marginBottom:12}}>
-        <label style={{fontSize:11,color:"#666",display:"block",marginBottom:4}}>🕐 Heure du rappel</label>
-        <input type="time" value={heure} onChange={e=>setHeure(e.target.value)}
-          style={{padding:"8px 12px",border:"1px solid #E0E0DC",borderRadius:8,fontSize:13,outline:"none",color:"#222"}}/>
+      <div style={{fontSize:13,fontWeight:700,color:"#222",marginBottom:4}}>🔔 Notifications par module</div>
+      <div style={{fontSize:11,color:"#888",marginBottom:12}}>
+        Activez les rappels pour chaque module • {nbActifs} module{nbActifs !== 1 ? "s" : ""} actif{nbActifs !== 1 ? "s" : ""}
       </div>
+
+      {msg && <div style={{padding:"8px 12px",background:"#E1F5EE",color:"#085041",borderRadius:8,marginBottom:12,fontSize:12}}>{msg}</div>}
 
       <div style={{marginBottom:16}}>
-        <label style={{fontSize:11,color:"#666",display:"block",marginBottom:8}}>📅 Jours actifs</label>
-        <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-          {JOURS.map((j,i) => (
-            <button key={i} onClick={()=>toggleJour(i)}
-              style={{padding:"6px 10px",borderRadius:20,border:"none",cursor:"pointer",
-                fontFamily:"inherit",fontSize:11,fontWeight:600,
-                background:jours.includes(i)?"#1D9E75":"#F0F0EC",
-                color:jours.includes(i)?"#fff":"#666"}}>
-              {j}
-            </button>
-          ))}
-        </div>
+        {EQUIPEMENTS.map(eq => (
+          <div key={eq.key} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 0",borderBottom:"0.5px solid #F0F0EC"}}>
+            <div>
+              <div style={{fontSize:12,fontWeight:600,color:"#222"}}>{eq.label}</div>
+              <div style={{fontSize:11,color:"#888"}}>{eq.desc}</div>
+            </div>
+            <div onClick={() => toggleEquipement(eq.key)}
+              style={{width:44,height:24,borderRadius:12,cursor:"pointer",transition:"background 0.2s",
+                background:actifs[eq.key] ? "#1D9E75" : "#E0E0DC",
+                position:"relative",flexShrink:0}}>
+              <div style={{position:"absolute",top:2,
+                left:actifs[eq.key] ? 22 : 2,
+                width:20,height:20,borderRadius:10,background:"#fff",
+                transition:"left 0.2s",boxShadow:"0 1px 3px rgba(0,0,0,0.2)"}}/>
+            </div>
+          </div>
+        ))}
       </div>
 
-      <div style={{display:"flex",gap:8}}>
-        <button onClick={sauvegarder}
-          style={{padding:"8px 16px",background:"#1D9E75",color:"#fff",border:"none",borderRadius:8,cursor:"pointer",fontFamily:"inherit",fontSize:12,fontWeight:600}}>
-          🔔 Activer
+      <div style={{display:"flex",alignItems:"center",gap:10}}>
+        <div>
+          <label style={{fontSize:11,color:"#666",display:"block",marginBottom:4}}>🕐 Heure des rappels</label>
+          <input type="time" value={heure} onChange={e=>setHeure(e.target.value)}
+            style={{padding:"8px 12px",border:"1px solid #E0E0DC",borderRadius:8,fontSize:13,outline:"none",color:"#222"}}/>
+        </div>
+        <button onClick={sauvegarderHeure}
+          style={{marginTop:16,padding:"8px 16px",background:"#1D9E75",color:"#fff",border:"none",borderRadius:8,cursor:"pointer",fontFamily:"inherit",fontSize:12,fontWeight:600}}>
+          💾 Sauvegarder
         </button>
-        {enabled && <button onClick={desactiver}
-          style={{padding:"8px 16px",background:"#fff",color:"#666",border:"1px solid #E0E0DC",borderRadius:8,cursor:"pointer",fontFamily:"inherit",fontSize:12}}>
-          🔕 Désactiver
-        </button>}
       </div>
     </div>
   )
 }
+
 function PageParametres({ profile }) {
-  const [pin, setPin] = useState(profile?.rapport_pin || "")
-  const [msg, setMsg] = useState("")
-  const [saving, setSaving] = useState(false)
-
-  const savePin = async () => {
-    if (pin && pin.length !== 4) { setMsg("Le PIN doit contenir 4 chiffres"); return }
-    setSaving(true)
-    const { error } = await supabase.from("profiles")
-      .update({ rapport_pin: pin || null })
-      .eq("id", profile.id)
-    if (error) setMsg("Erreur : " + error.message)
-    else setMsg("✅ PIN mis à jour !")
-    setSaving(false)
-    setTimeout(() => setMsg(""), 3000)
-  }
-
   return <div>
-    <div style={{background:"#fff",border:"0.5px solid #E8E8E4",borderRadius:12,padding:20,marginBottom:16}}>
-      <div style={{fontSize:13,fontWeight:700,color:"#222",marginBottom:4}}>🔒 Code PIN Rapports</div>
-      <div style={{fontSize:11,color:"#888",marginBottom:16}}>Protège l'accès à la page Rapports avec un code à 4 chiffres</div>
-      <label style={{fontSize:11,color:"#666",display:"block",marginBottom:4}}>Code PIN (4 chiffres)</label>
-      <input type="password" maxLength={4} value={pin} onChange={e=>setPin(e.target.value)}
-        placeholder="••••"
-        style={{width:"100%",padding:"10px 12px",border:"1px solid #E0E0DC",borderRadius:8,fontSize:18,outline:"none",boxSizing:"border-box",letterSpacing:8,textAlign:"center",marginBottom:8}}/>
-      <div style={{fontSize:11,color:"#aaa",marginBottom:12}}>Laissez vide pour désactiver le PIN</div>
-      {msg && <div style={{padding:"8px 12px",background:msg.includes("✅")?"#E1F5EE":"#FCEBEB",color:msg.includes("✅")?"#085041":"#501313",borderRadius:8,marginBottom:12,fontSize:12}}>{msg}</div>}
-      <button onClick={savePin} disabled={saving}
-        style={{width:"100%",padding:12,background:"#1D9E75",color:"#fff",border:"none",borderRadius:8,cursor:"pointer",fontFamily:"inherit",fontSize:13,fontWeight:600}}>
-        {saving ? "Enregistrement..." : "💾 Sauvegarder le PIN"}
-      </button>
-    </div>
     <NotificationSettings />
 
     <div style={{background:"#fff",border:"0.5px solid #E8E8E4",borderRadius:12,padding:20}}>
